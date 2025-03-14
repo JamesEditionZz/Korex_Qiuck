@@ -16,7 +16,7 @@ export default function Home() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/Login", {
+      const res = await fetch("http://10.15.0.23:5006/api/Login", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
@@ -48,6 +48,9 @@ export default function Home() {
       handleLogin();
     }
   }
+  
+  console.log(username)
+  console.log(password)
 
   return (
     <div className="container mt-5 p-5">
@@ -55,7 +58,7 @@ export default function Home() {
         <div className={`col-12 ${animateouttop ? "slide-out-top" : ""}`} align="center">
           <Image
             className="Logo-img"
-            src={"/img/Logo2.jpg"}
+            src={"/img/Logo.jpg"}
             width={1000}
             height={150}
           />

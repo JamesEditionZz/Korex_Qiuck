@@ -23,7 +23,7 @@ const config = {
 };
 
 // ตั้งค่าพาธสำหรับบันทึกไฟล์ในเครื่องเครือข่าย
-const uploadPath = "\\\\192.168.199.104\\File_Uploads";
+const uploadPath = "\\\\192.168.199.104\\File_Uploads\\";
 
 // ตรวจสอบว่าพาธมีอยู่หรือไม่ ถ้าไม่มีให้สร้าง
 if (!fs.existsSync(uploadPath)) {
@@ -460,7 +460,7 @@ app.post(
       for (const file of req.files) {
         try {
           const response = await fetch(
-            `http://ptkjdeweb:9083/jderest/v3/orchestrator/Korex_FileUpload`,
+            `http://192.168.199.104:9083/jderest/v3/orchestrator/Korex_FileUpload`,
             {
               method: "POST",
               headers: {

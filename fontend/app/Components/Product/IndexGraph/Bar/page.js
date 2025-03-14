@@ -25,7 +25,7 @@ const page = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch("http://localhost:8000/api/get/MasterData");
+      const res = await fetch("http://10.15.0.23:5006/api/get/MasterData");
       const data = await res.json();
       setMasterData(data);
     };

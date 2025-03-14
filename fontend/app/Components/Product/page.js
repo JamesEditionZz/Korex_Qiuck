@@ -55,7 +55,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch("http://localhost:8000/api/get/MasterData");
+      const res = await fetch("http://10.15.0.23:5006/api/get/MasterData");
       const data = await res.json();
       setMasterData(data);
     };
@@ -64,7 +64,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://localhost:8000/api/get/product");
+      const response = await fetch("http://10.15.0.23:5006/api/get/product");
       const fetdata = await response.json();
 
       setData(fetdata);
@@ -73,7 +73,7 @@ function page() {
     const fetchBasket = async () => {
       if (!username) return;
       try {
-        const res = await fetch("http://localhost:8000/api/post/checkbasket", {
+        const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
@@ -94,7 +94,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://localhost:8000/api/get/DashBoard");
+      const response = await fetch("http://10.15.0.23:5006/api/get/DashBoard");
       const fetdata = await response.json();
 
       setDashBoard(fetdata);
@@ -111,7 +111,7 @@ function page() {
 
   const handlemodal = async (Name_Product, Number_FG) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/find/FG`, {
+      const res = await fetch(`http://10.15.0.23:5006/api/find/FG`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({ Number_FG }),
@@ -125,7 +125,7 @@ function page() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/api/post/category");
+      const res = await fetch("http://10.15.0.23:5006/api/post/category");
 
       const response = await res.json();
 
@@ -158,7 +158,7 @@ function page() {
   };
 
   const page_Detail = async () => {
-    const res = await fetch(`http://localhost:8000/api/get/import_file`);
+    const res = await fetch(`http://10.15.0.23:5006/api/get/import_file`);
     const fetchdata = await res.json();
 
     setImportFile(fetchdata);
@@ -196,7 +196,7 @@ function page() {
       request_Date != ""
     ) {
       try {
-        const res = await fetch("http://localhost:8000/api/post/basket", {
+        const res = await fetch("http://10.15.0.23:5006/api/post/basket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
@@ -224,7 +224,7 @@ function page() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/api/post/checkbasket", {
+      const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
@@ -242,7 +242,7 @@ function page() {
   const handlesubmit = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/post/ERPRecord", {
+      const res = await fetch("http://10.15.0.23:5006/api/post/ERPRecord", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
@@ -262,27 +262,30 @@ function page() {
             product_basket.map(async (item) => {
               console.log(item);
 
-              const res = await fetch("http://localhost:8000/api/post/Master", {
-                method: "POST",
-                headers: { "Content-type": "application/json" },
-                body: JSON.stringify({
-                  FG_Product: item.Product_FG,
-                  Name_Project: item.Product_Projectname,
-                  Name_Class: item.Product_class,
-                  // SO: item.SO,
-                  // SN: item.SN,
-                  Name_Product: item.Name_Product,
-                  Category_Product: item.Product_Category,
-                  Width: item.Product_width,
-                  Height: item.Product_long,
-                  PCS: item.Product_pcs,
-                  Price: item.Product_price,
-                  username,
-                  Description: item.Product_description,
-                  request_date: item.Product_requestDate,
-                  ERP_Order_Number: storedNumberOrder,
-                }),
-              });
+              const res = await fetch(
+                "http://10.15.0.23:5006/api/post/Master",
+                {
+                  method: "POST",
+                  headers: { "Content-type": "application/json" },
+                  body: JSON.stringify({
+                    FG_Product: item.Product_FG,
+                    Name_Project: item.Product_Projectname,
+                    Name_Class: item.Product_class,
+                    // SO: item.SO,
+                    // SN: item.SN,
+                    Name_Product: item.Name_Product,
+                    Category_Product: item.Product_Category,
+                    Width: item.Product_width,
+                    Height: item.Product_long,
+                    PCS: item.Product_pcs,
+                    Price: item.Product_price,
+                    username,
+                    Description: item.Product_description,
+                    request_date: item.Product_requestDate,
+                    ERP_Order_Number: storedNumberOrder,
+                  }),
+                }
+              );
               return res.json();
             })
           );
@@ -301,7 +304,7 @@ function page() {
   };
 
   const recordNameProject = async () => {
-    if (projectName != "" && projectClass != "") {
+    if (projectName != "") {
       setCheckNameProject(true);
     }
   };
@@ -310,7 +313,7 @@ function page() {
     if (confirm(`ยืนยันการลบ`)) {
       try {
         const fetchDelete = await fetch(
-          "http://localhost:8000/api/post/DeleteBasket",
+          "http://10.15.0.23:5006/api/post/DeleteBasket",
           {
             method: "POST",
             headers: { "Content-type": "application/json" },
@@ -321,7 +324,7 @@ function page() {
         );
 
         try {
-          const res = await fetch("http://localhost:8000/api/get/basket");
+          const res = await fetch("http://10.15.0.23:5006/api/get/basket");
           const response = await res.json();
           setProduct_Basket(response);
         } catch (error) {
@@ -412,7 +415,7 @@ function page() {
     formData.append("Description", updatePDFDiscription);
     formData.append("Order", numberOrder);
 
-    const res = await fetch(`http://localhost:8000/api/post/importFile`, {
+    const res = await fetch(`http://10.15.0.23:5006/api/post/importFile`, {
       method: "POST",
       body: formData,
     });
@@ -427,6 +430,8 @@ function page() {
       window.location.reload();
     } else {
       alert("ไม่สามารถบันทึกได้");
+      setModelFile(0);
+      setLoading(false);
     }
   };
 
@@ -446,7 +451,7 @@ function page() {
   const OrderDetail = async (OrderNumber) => {
     setModelDetail(true);
 
-    const res = await fetch(`http://localhost:8000/api/post/OrderDetail`, {
+    const res = await fetch(`http://10.15.0.23:5006/api/post/OrderDetail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ OrderNumber }),
@@ -493,6 +498,15 @@ function page() {
   const CloseModelDetail = () => {
     setModelDetail(false);
   };
+
+  const Report = (Name_Project) => {
+    console.log(Name_Project);
+  };
+
+  const TextHeader = () => (
+    console.log('test')
+    
+  )
 
   return (
     <div className="bg-dashbaord">
@@ -672,6 +686,14 @@ function page() {
               <label className="h5">
                 โครงการ {detailOrder[0]?.Name_Project}
               </label>
+              <div className="w-90 position-absolute d-flex justify-content-end">
+                <button
+                  className="btn btn-danger"
+                  onClick={() => Report(detailOrder[0]?.Name_Project)}
+                >
+                  Report
+                </button>
+              </div>
             </div>
             <div className="w-100 col-12">
               {Object.entries(groupByCategory(detailOrder)).map(
@@ -679,11 +701,11 @@ function page() {
                   <div key={category}>
                     {/* หัวข้อหมวดหมู่ */}
                     <h5 className="mt-3">{category}</h5>
-                    <table className="table table-bordered">
+                    <table className="table table-bordered w-100">
                       <thead className="text-center">
                         <tr>
                           <th>FG</th>
-                          <th>สินค้า</th>
+                          <th>ประเภทสินค้า</th>
                           <th>กว้าง X ยาว</th>
                           <th>จำนวน/ชิ้น</th>
                           <th>ราคา</th>
@@ -694,13 +716,13 @@ function page() {
                         {items.map((item, index) => (
                           <tr key={index}>
                             <td>{item.FG_Product}</td>
-                            <td>{item.Name_Project}</td>
+                            <td>{item.Name_Product}</td>
                             <td>
                               {item.Width}x{item.Height}
                             </td>
                             <td>{item.PCS}</td>
                             <td>{item.Price}</td>
-                            <td>{item.Name_Product}</td>
+                            <td>{item.Description}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -767,7 +789,7 @@ function page() {
               <div className="col-4">
                 <div className="card-modal-1">
                   <div className="number-modal">
-                    <h5>โครงการ เดือน{month[findmonthThai]}</h5>
+                    <h5>โครงการทั้งหมด</h5>
                     <hr />
                     <div className="d-flex justify-content-end">
                       <label>
@@ -829,7 +851,6 @@ function page() {
                           <th width="5%">รายละเอียด</th>
                         </tr>
                       </thead>
-                      {console.log(masterData)}
                       <tbody>
                         {masterData
                           .filter((element) => {
@@ -887,7 +908,7 @@ function page() {
                     <option>กำลังส่ง</option>
                   </select>
                 </div>
-                <h5 className="col-11">รายการทั้งหมด({currentYear})</h5>
+                <h5 className="col-11">โครงการทั้งหมด({currentYear})</h5>
               </div>
               <div className="dashboard-table-responsive mx-4">
                 <table className="table table-bordered">
@@ -962,21 +983,12 @@ function page() {
         {swith_page === 1 &&
           (checknameProject === true ? (
             <div className="container">
-              <div className="row mt-3 radius-border">
-                <div className="col-6">
+              <div className="row mt-3">
+                <div className="col-12 text-center">
                   <label className="h3">โครงการ {projectName}</label>
                   <label
                     className="h3  mx-3 text-cancel"
                     onClick={() => deleteprojectname(1)}
-                  >
-                    &times;
-                  </label>
-                </div>
-                <div className="col-6 text-end">
-                  <label className="h3">{projectClass}</label>
-                  <label
-                    className="h3  mx-3 text-cancel"
-                    onClick={() => deleteprojectname(2)}
                   >
                     &times;
                   </label>
@@ -1018,19 +1030,6 @@ function page() {
                         required
                       />
                     </div>
-
-                    {/* Input สำหรับชั้น */}
-                    <div className="col-1 mt-3 text-danger h3">*</div>
-                    <div className="col-11 mt-3">
-                      <input
-                        className="form-control"
-                        placeholder="ชั้น"
-                        value={projectClass}
-                        onChange={(e) => setProjectClass(e.target.value)}
-                        required
-                      />
-                    </div>
-
                     {/* ปุ่มบันทึก */}
                     <div className="d-flex justify-content-center mt-3">
                       <button
@@ -1050,10 +1049,16 @@ function page() {
             <div className={`p-5 mx-5 form-product opacity`}>
               {product_basket.length > 0 && (
                 <>
-                  <div className="text-center mb-2">
+                  <div className="d-flex justify-content-between mb-2">
                     <label className="h4">
                       โครงการ {product_basket[0]?.Product_Projectname}
                     </label>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => TextHeader()}
+                    >
+                      เพิ่ม textheader
+                    </button>
                   </div>
                   <div className="basket-table-responsive">
                     <table className="table table-bordered">
@@ -1160,7 +1165,7 @@ function page() {
                           <td>{item.NumberOrder}</td>
                           <td>{item.Name_Project}</td>
                           <td>{item.PCS}</td>
-                          <td>{item.Price}</td>
+                          <td>{item.Price * item.PCS}</td>
                           <td>{item.LatestDate.split("T")[0]}</td>
                           <td width={50}>
                             <button

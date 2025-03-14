@@ -306,7 +306,7 @@ table {
   height: 100%;
   display: flex;
   position: fixed;
-  z-index: 1000;
+  z-index: 500;
   padding: 10%;
 }
 
@@ -344,4 +344,7 @@ table {
   background-color: white;
 }
 
+.w-90{
+ width: 95%
+}
 /* navbar-menu text-center */
