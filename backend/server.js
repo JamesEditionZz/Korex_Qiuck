@@ -5,7 +5,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const app = express();
-const port = 8000;
+const port = 5006;
 
 app.use(cors());
 app.use(express.json());
@@ -149,8 +149,6 @@ app.post("/api/post/basket", async (req, res) => {
     const pool = await sql.connect(config);
 
     const {
-      projectName,
-      projectClass,
       standard,
       number_FG,
       getProduct,
@@ -177,8 +175,6 @@ app.post("/api/post/basket", async (req, res) => {
       .input("member", sql.VarChar, username.username)
       .input("number_FG", sql.VarChar, number_FG)
       .input("Product_description", sql.VarChar, textArea)
-      .input("projectName", sql.VarChar, projectName)
-      .input("projectClass", sql.VarChar, projectClass)
       .execute("db_Insert_basket");
 
     res.status(200).json(result.recordset);
@@ -273,7 +269,7 @@ app.post("/api/post/ERPRecord", async (req, res) => {
           Ln_Ty: "S",
           Branch__Plant: "P01",
           Requested_Date: Product_requestDate,
-          
+
         });
       }
     );
@@ -286,7 +282,7 @@ app.post("/api/post/ERPRecord", async (req, res) => {
     let formattedDate = `${day}/${month}/${year}`;
 
     const apiResponse = await fetch(
-      "http://ptkjdeweb:9083/jderest/v3/orchestrator/CreateSalesOrder_KOR",
+      "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KOR",
       {
         method: "POST",
         headers: {
@@ -311,9 +307,9 @@ app.post("/api/post/ERPRecord", async (req, res) => {
           P4210_Version: "",
         }),
       }
-    );    
+    );
 
-    const apiResult = await apiResponse.json();    
+    const apiResult = await apiResponse.json();
 
     // ส่ง response กลับไปยังผู้ใช้งาน
     res.status(200).json(apiResult);
@@ -349,13 +345,13 @@ app.post("/api/post/Master", async (req, res) => {
     const formattedDate = datetoday.toISOString().split('T')[0];
 
     const daterequest = request_date.split('T')[0]
-    
+
     const result = await pool
       .request()
       .input("Order_date", sql.VarChar, formattedDate)
       .input("FG_Product", sql.VarChar, FG_Product)
       .input("Name_Project", sql.VarChar, Name_Project)
-      .input("Name_Class", sql.VarChar, Name_Class)
+      .input("Name_Class", sql.VarChar, "")
       .input("SO", sql.VarChar, "")
       .input("SN", sql.VarChar, "")
       .input("Name_Product", sql.VarChar, Name_Product)
@@ -554,6 +550,44 @@ app.post("/api/post/OrderDetail", async (req, res) => {
     res.status(500).send("Error querying the database");
   }
 });
+
+app.post("/api/post/updateClass", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { draggedItem, item } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Product_ID", sql.Int, draggedItem.Product_ID)
+      .input("item", sql.VarChar, item)
+      .execute("db_update_Class")
+
+    res.status(200).json(result.recordset)
+
+  } catch (error) {
+    console.error(error);
+  }
+})
+
+app.post("/api/update/NameProject", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { nameProject, username } = req.body;
+
+    const result = await pool
+      .request()
+      .input("nameProject", sql.VarChar, nameProject)
+      .input("username", sql.VarChar, username.username)
+      .execute("db_update_Project")
+
+    res.status(200).json(result.recordset)
+
+  } catch (error) {
+    console.error(error);
+  }
+})
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
