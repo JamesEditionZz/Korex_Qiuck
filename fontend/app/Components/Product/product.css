@@ -266,7 +266,6 @@ table {
   position: fixed;
   top: 250px;
   left: 40%;
-  width: 25%;
   height: auto;
   padding: 10px;
   background-color: white;
@@ -347,4 +346,8 @@ table {
 .w-90{
  width: 95%
 }
-/* navbar-menu text-center */
+
+.cursor-grab{
+  cursor: grab;
+}
+

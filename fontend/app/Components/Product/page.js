@@ -23,7 +23,7 @@ function page() {
   const [modelFile, setModelFile] = useState(0);
   const [importFile, setImportFile] = useState(null);
   const [modelDetail, setModelDetail] = useState(false);
-  const [checknameProject, setCheckNameProject] = useState(false);
+  const [modelNameProject, setModelNameProject] = useState(false);
   const [masterData, setMasterData] = useState([]);
 
   const username = JSON.parse(localStorage.getItem("username"));
@@ -42,8 +42,10 @@ function page() {
   const [getPrice, setGetPrice] = useState(0);
   const [number_FG, setNumber_FG] = useState(0);
   const [request_Date, setRequest_Date] = useState("");
+  const [clickSInput, setClickSInput] = useState(0)
+  const [arrayHeader, setArrayHeader] = useState([])
+  const [nameProject, setNameProject] = useState("")
 
-  const [projectName, setProjectName] = useState("");
   const [projectClass, setProjectClass] = useState("");
   const [numberOrder, setNumberOrder] = useState(0);
   const [updatePDFProject, setUpdatePDFProject] = useState("");
@@ -53,9 +55,11 @@ function page() {
 
   const [detailOrder, setDetailOrder] = useState([]);
 
+  const [draggedItem, setDraggedItem] = useState(null); // เก็บค่าที่ถูกลาก
+
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch("http://10.15.0.23:5006/api/get/MasterData");
+      const res = await fetch("http://localhost:5006/api/get/MasterData");
       const data = await res.json();
       setMasterData(data);
     };
@@ -64,7 +68,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://10.15.0.23:5006/api/get/product");
+      const response = await fetch("http://localhost:5006/api/get/product");
       const fetdata = await response.json();
 
       setData(fetdata);
@@ -73,7 +77,7 @@ function page() {
     const fetchBasket = async () => {
       if (!username) return;
       try {
-        const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+        const res = await fetch("http://localhost:5006/api/post/checkbasket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
@@ -94,7 +98,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://10.15.0.23:5006/api/get/DashBoard");
+      const response = await fetch("http://localhost:5006/api/get/DashBoard");
       const fetdata = await response.json();
 
       setDashBoard(fetdata);
@@ -111,7 +115,7 @@ function page() {
 
   const handlemodal = async (Name_Product, Number_FG) => {
     try {
-      const res = await fetch(`http://10.15.0.23:5006/api/find/FG`, {
+      const res = await fetch(`http://localhost:5006/api/find/FG`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({ Number_FG }),
@@ -125,7 +129,7 @@ function page() {
     }
 
     try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/category");
+      const res = await fetch("http://localhost:5006/api/post/category");
 
       const response = await res.json();
 
@@ -158,7 +162,7 @@ function page() {
   };
 
   const page_Detail = async () => {
-    const res = await fetch(`http://10.15.0.23:5006/api/get/import_file`);
+    const res = await fetch(`http://localhost:5006/api/get/import_file`);
     const fetchdata = await res.json();
 
     setImportFile(fetchdata);
@@ -196,12 +200,10 @@ function page() {
       request_Date != ""
     ) {
       try {
-        const res = await fetch("http://10.15.0.23:5006/api/post/basket", {
+        const res = await fetch("http://localhost:5006/api/post/basket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
-            projectName,
-            projectClass,
             standard,
             number_FG,
             getProduct,
@@ -224,7 +226,7 @@ function page() {
     }
 
     try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+      const res = await fetch("http://localhost:5006/api/post/checkbasket", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
@@ -241,79 +243,89 @@ function page() {
 
   const handlesubmit = async () => {
     setLoading(true);
+
     try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/ERPRecord", {
+      const res = await fetch("http://localhost:5006/api/update/NameProject", {
         method: "POST",
-        headers: { "Content-type": "application/json" },
-        body: JSON.stringify({
-          username,
-        }),
-      });
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nameProject, username })
+      })
 
-      const response = await res.json();
-      const newNumberOrder = response["Previous Order"];
-
-      sessionStorage.setItem("numberOrder", newNumberOrder);
-
-      if (newNumberOrder) {
-        const storedNumberOrder = sessionStorage.getItem("numberOrder");
+      if (res.ok) {
         try {
-          const responses = await Promise.all(
-            product_basket.map(async (item) => {
-              console.log(item);
+          const res = await fetch("http://localhost:5006/api/post/ERPRecord", {
+            method: "POST",
+            headers: { "Content-type": "application/json" },
+            body: JSON.stringify({
+              username,
+            }),
+          });
 
-              const res = await fetch(
-                "http://10.15.0.23:5006/api/post/Master",
-                {
-                  method: "POST",
-                  headers: { "Content-type": "application/json" },
-                  body: JSON.stringify({
-                    FG_Product: item.Product_FG,
-                    Name_Project: item.Product_Projectname,
-                    Name_Class: item.Product_class,
-                    // SO: item.SO,
-                    // SN: item.SN,
-                    Name_Product: item.Name_Product,
-                    Category_Product: item.Product_Category,
-                    Width: item.Product_width,
-                    Height: item.Product_long,
-                    PCS: item.Product_pcs,
-                    Price: item.Product_price,
-                    username,
-                    Description: item.Product_description,
-                    request_date: item.Product_requestDate,
-                    ERP_Order_Number: storedNumberOrder,
-                  }),
-                }
+          const response = await res.json();
+          const newNumberOrder = response["Previous Order"];
+
+          sessionStorage.setItem("numberOrder", newNumberOrder);
+
+          if (newNumberOrder) {
+            const storedNumberOrder = sessionStorage.getItem("numberOrder");
+            try {
+              const responses = await Promise.all(
+                product_basket.map(async (item) => {
+                  console.log(item);
+
+                  const res = await fetch(
+                    "http://localhost:5006/api/post/Master",
+                    {
+                      method: "POST",
+                      headers: { "Content-type": "application/json" },
+                      body: JSON.stringify({
+                        FG_Product: item.Product_FG,
+                        Name_Project: item.Product_Projectname,
+                        Name_Class: item.Product_class,
+                        // SO: item.SO,
+                        // SN: item.SN,
+                        Name_Product: item.Name_Product,
+                        Category_Product: item.Product_Category,
+                        Width: item.Product_width,
+                        Height: item.Product_long,
+                        PCS: item.Product_pcs,
+                        Price: item.Product_price,
+                        username,
+                        Description: item.Product_description,
+                        request_date: item.Product_requestDate,
+                        ERP_Order_Number: storedNumberOrder,
+                      }),
+                    }
+                  );
+                  return res.json();
+                })
               );
-              return res.json();
-            })
-          );
-          setProduct_Basket(responses);
+              setProduct_Basket(responses);
+            } catch (error) {
+              console.error(error);
+            } finally {
+              setLoading(false);
+              alert("บันทึกเรียบร้อยแล้ว");
+              window.location.reload();
+            }
+          }
         } catch (error) {
-          console.error(error);
-        } finally {
-          setLoading(false);
-          alert("บันทึกเรียบร้อยแล้ว");
-          window.location.reload();
+          console.error("Login failed:", error);
         }
       }
     } catch (error) {
-      console.error("Login failed:", error);
-    }
-  };
+      console.error(error);
 
-  const recordNameProject = async () => {
-    if (projectName != "") {
-      setCheckNameProject(true);
     }
+
+
   };
 
   const deletebasket = async (value) => {
     if (confirm(`ยืนยันการลบ`)) {
       try {
         const fetchDelete = await fetch(
-          "http://10.15.0.23:5006/api/post/DeleteBasket",
+          "http://localhost:5006/api/post/DeleteBasket",
           {
             method: "POST",
             headers: { "Content-type": "application/json" },
@@ -324,7 +336,7 @@ function page() {
         );
 
         try {
-          const res = await fetch("http://10.15.0.23:5006/api/get/basket");
+          const res = await fetch("http://localhost:5006/api/get/basket");
           const response = await res.json();
           setProduct_Basket(response);
         } catch (error) {
@@ -415,7 +427,7 @@ function page() {
     formData.append("Description", updatePDFDiscription);
     formData.append("Order", numberOrder);
 
-    const res = await fetch(`http://10.15.0.23:5006/api/post/importFile`, {
+    const res = await fetch(`http://localhost:5006/api/post/importFile`, {
       method: "POST",
       body: formData,
     });
@@ -451,7 +463,7 @@ function page() {
   const OrderDetail = async (OrderNumber) => {
     setModelDetail(true);
 
-    const res = await fetch(`http://10.15.0.23:5006/api/post/OrderDetail`, {
+    const res = await fetch(`http://localhost:5006/api/post/OrderDetail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ OrderNumber }),
@@ -460,16 +472,6 @@ function page() {
     const response = await res.json();
 
     setDetailOrder(response);
-  };
-
-  const deleteprojectname = (number) => {
-    if (number === 1) {
-      setProjectName("");
-      setCheckNameProject(false);
-    } else {
-      setProjectClass("");
-      setCheckNameProject(false);
-    }
   };
 
   const groupedProducts = product_basket.reduce((acc, product) => {
@@ -503,10 +505,43 @@ function page() {
     console.log(Name_Project);
   };
 
-  const TextHeader = () => (
-    console.log('test')
-    
-  )
+  const recodeProjectClass = (e) => {
+    if (e.key === "Enter") {
+      setArrayHeader([...new Set([...arrayHeader, projectClass])]);
+      setProjectClass("")
+    } else if (e === 1) {
+      setArrayHeader([...new Set([...arrayHeader, projectClass])]);
+      setProjectClass("")
+    }
+  }
+
+  const DropEvent = async (item) => {
+    const res = await fetch(`http://localhost:5006/api/post/updateClass`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draggedItem, item })
+    })
+
+    if (res.ok) {
+      setArrayHeader(arrayHeader.filter(Class => Class !== item));
+
+      try {
+        const res = await fetch("http://localhost:5006/api/post/checkbasket", {
+          method: "POST",
+          headers: { "Content-type": "application/json" },
+          body: JSON.stringify({
+            username,
+          }),
+        });
+
+        const response = await res.json();
+        setProduct_Basket(response);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
 
   return (
     <div className="bg-dashbaord">
@@ -552,8 +587,8 @@ function page() {
                 {category_Bloom[0]?.Category_bloom === null
                   ? ""
                   : category_Bloom.map((item, index) => (
-                      <option key={index}>{item.Category_bloom}</option>
-                    ))}
+                    <option key={index}>{item.Category_bloom}</option>
+                  ))}
               </select>
             </div>
             <div className="mb-2 row">
@@ -734,39 +769,51 @@ function page() {
           </div>
         </div>
       )}
+      {modelNameProject === true && (
+        <div className="modelproject">
+          <div className="modelproject-content">
+            <div className="row">
+              <div className="text-center col-12">
+                <label>ระบุโครงการ</label>
+              </div>
+              <div className="col-12 mb-3 mt-3">
+                <input className="form-control" placeholder="โครงการ" onChange={(e) => setNameProject(e.target.value)} />
+              </div>
+              <div className="col-6 d-flex justify-content-center"><button className="btn btn-danger" onClick={() => setModelNameProject(false)}>ยกเลิก</button></div>
+              <div className="col-6 d-flex justify-content-center"><button className="btn btn-primary" onClick={() => handlesubmit()}>บันทึก</button></div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className={`navbar-menu text-center`}>
         <div className="row">
           <div
-            className={`col border-btn ${
-              header_select == 0 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 0 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_listproduct}>
               แดชบอร์ด
             </h5>
           </div>
           <div
-            className={`col border-btn ${
-              header_select == 1 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 1 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_product}>
               สั่งสินค้า
             </h5>
           </div>
           <div
-            className={`col border-btn ${
-              header_select == 2 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 2 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_basket}>
               {product_basket.length} รายการ
             </h5>
           </div>
           <div
-            className={`col border-btn ${
-              header_select == 3 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 3 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_Detail}>
               แนบแบบโครงการ
@@ -872,8 +919,8 @@ function page() {
                                     .getDate()
                                     .toString()
                                     .padStart(2, "0")}-${(date.getMonth() + 1)
-                                    .toString()
-                                    .padStart(2, "0")}-${date.getFullYear()}`;
+                                      .toString()
+                                      .padStart(2, "0")}-${date.getFullYear()}`;
                                 })()}
                               </td>
                               <td align="center">
@@ -939,8 +986,8 @@ function page() {
                                 .getDate()
                                 .toString()
                                 .padStart(2, "0")}-${(date.getMonth() + 1)
-                                .toString()
-                                .padStart(2, "0")}-${date.getFullYear()}`;
+                                  .toString()
+                                  .padStart(2, "0")}-${date.getFullYear()}`;
                             })()}
                           </td>
                           <td></td>
@@ -953,8 +1000,8 @@ function page() {
                                 .getDate()
                                 .toString()
                                 .padStart(2, "0")}-${(date.getMonth() + 1)
-                                .toString()
-                                .padStart(2, "0")}-${date.getFullYear()}`;
+                                  .toString()
+                                  .padStart(2, "0")}-${date.getFullYear()}`;
                             })()}
                           </td>
                           <td className="text-center">{element.Product_pcs}</td>
@@ -981,84 +1028,57 @@ function page() {
           </div>
         )}
         {swith_page === 1 &&
-          (checknameProject === true ? (
-            <div className="container">
-              <div className="row mt-3">
-                <div className="col-12 text-center">
-                  <label className="h3">โครงการ {projectName}</label>
-                  <label
-                    className="h3  mx-3 text-cancel"
-                    onClick={() => deleteprojectname(1)}
-                  >
-                    &times;
-                  </label>
-                </div>
+          <div className="container">
+            <div className="row mt-3">
+              <div className="col-12 text-center mt-3">
+                <label className="h3">
+                  เลือกประเภท
+                </label>
               </div>
-              <div
-                className={`form-product opacity
+            </div>
+            <div
+              className={`form-product opacity
                 `}
-              >
-                <div className="row mx-5 mt-5 d-flex justify-content-between">
-                  {uniqueData.map((item, index) => (
-                    <div className="col-2 mb-3" key={index}>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() =>
-                          handlemodal(item.Name_Product, item.Number_FG)
-                        }
-                      >
-                        {item.Name_Product}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="modelproject">
-              <div className="modelproject-content">
-                <div className="p-3">
-                  <div className="row">
-                    {/* Input สำหรับชื่อโครงการ */}
-                    <div className="col-1 text-danger h3">*</div>
-                    <div className="col-11">
-                      <input
-                        className="form-control"
-                        placeholder="ชื่อโครงการ"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    {/* ปุ่มบันทึก */}
-                    <div className="d-flex justify-content-center mt-3">
-                      <button
-                        className="btn btn-success mx-3"
-                        onClick={() => recordNameProject()}
-                      >
-                        บันทึก
-                      </button>
-                    </div>
+            >
+              <div className="row mx-5 mt-3 d-flex justify-content-between">
+                {uniqueData.map((item, index) => (
+                  <div className="col-2 mb-3" key={index}>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        handlemodal(item.Name_Product, item.Number_FG)
+                      }
+                    >
+                      {item.Name_Product}
+                    </button>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
-          ))}
+          </div>
+        }
         {swith_page === 2 && (
           <>
             <div className={`p-5 mx-5 form-product opacity`}>
               {product_basket.length > 0 && (
                 <>
-                  <div className="d-flex justify-content-between mb-2">
-                    <label className="h4">
-                      โครงการ {product_basket[0]?.Product_Projectname}
-                    </label>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => TextHeader()}
-                    >
-                      เพิ่ม textheader
-                    </button>
+                  <div className="d-flex justify-content-end mb-2">
+                    <div>
+                      {clickSInput > 0 ?
+                        <>
+                          <input className="form-control-sm mx-2" value={projectClass} onKeyUp={(e) => recodeProjectClass(e)} onChange={(e) => setProjectClass(e.target.value)} />
+                          <button className="btn btn-success" onClick={() => recodeProjectClass(1)}>
+                            +
+                          </button>
+                        </>
+                        :
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setClickSInput(1)}
+                        >
+                          เพิ่ม textheader
+                        </button>}
+                    </div>
                   </div>
                   <div className="basket-table-responsive">
                     <table className="table table-bordered">
@@ -1072,21 +1092,38 @@ function page() {
                           <th>ราคา</th>
                           <th>วันที่จัดส่ง</th>
                           <th>รายละเอียดเพิ่มเติม</th>
+                          <th></th>
                         </tr>
                       </thead>
                       {Object.entries(groupedProducts).map(
                         ([productClass, products]) => (
                           <tbody key={productClass}>
-                            <tr>
-                              <td
-                                colSpan={8}
-                                className="fw-bold bg-light text-center"
+                            {productClass !== "null" && (
+                              <tr
+                                onDragOver={(e) => e.preventDefault()} // ป้องกันการบล็อค drop
+                                onDrop={() => DropEvent(productClass)} // แสดงผลเมื่อดรอป
                               >
-                                {productClass}
-                              </td>
-                            </tr>
+                                <td
+                                  colSpan={9}
+                                  className="fw-bold bg-light text-center"
+                                >
+                                  {productClass}
+                                </td>
+                              </tr>
+                            )}
+                            {productClass === "null" && (
+                              <td
+                              colSpan={9}
+                              className="fw-bold bg-light text-center"
+                            >
+                              สินค้าที่ยังไม่เลือก
+                            </td>
+                            )}
                             {products.map((element, index) => (
-                              <tr key={index}>
+                              <tr key={element.Product_ID}
+                                className="cursor-grab"
+                                draggable
+                                onDragStart={() => setDraggedItem(element)} >
                                 <td>{element.Product_FG}</td>
                                 <td>{element.Name_Product}</td>
                                 <td>{element.Product_Category}</td>
@@ -1118,12 +1155,20 @@ function page() {
                           </tbody>
                         )
                       )}
+                      {arrayHeader.map((item) => (
+                          <tr
+                            onDragOver={(e) => e.preventDefault()} // ป้องกันการบล็อค drop
+                            onDrop={() => DropEvent(item)} // แสดงผลเมื่อดรอป
+                          >
+                            <td colSpan={9} className="text-center p-2">{item}</td>
+                          </tr>
+                      ))}
                     </table>
                   </div>
                   <div className="d-flex justify-content-end mt-2">
                     <button
                       className="btn btn-danger"
-                      onClick={() => handlesubmit()}
+                      onClick={() => setModelNameProject(true)}
                     >
                       บันทึก
                     </button>
@@ -1165,7 +1210,7 @@ function page() {
                           <td>{item.NumberOrder}</td>
                           <td>{item.Name_Project}</td>
                           <td>{item.PCS}</td>
-                          <td>{item.Price * item.PCS}</td>
+                          <td>{item.Price}</td>
                           <td>{item.LatestDate.split("T")[0]}</td>
                           <td width={50}>
                             <button
