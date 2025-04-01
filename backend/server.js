@@ -141,7 +141,7 @@ app.post("/api/post/basket", async (req, res) => {
     const pool = await sql.connect(config);
 
     const {
-      nameProject,
+      projectName,
       projectClass,
       standard,
       number_FG,
@@ -171,7 +171,9 @@ app.post("/api/post/basket", async (req, res) => {
       .input("member", sql.VarChar, username.username)
       .input("number_FG", sql.VarChar, number_FG)
       .input("Product_description", sql.VarChar, textArea)
-      .execute(`db_Insert_basket`);
+      .input("projectName", sql.VarChar, projectName)
+      .input("projectClass", sql.VarChar, projectClass)
+      .execute("db_Insert_basket");
 
     res.status(200).json(result.recordset);
   } catch (error) {
@@ -281,30 +283,16 @@ ORDER BY Product_class ASC;`
           previousClass = Product_class; // อัปเดตค่า Product_class ปัจจุบัน
         }
 
-        // ถ้า Item_Number คือ 'N05' ให้เก็บค่าไว้ก่อน
-        if (item.Item_Number === "N05") {
-          hasN05 = true;
-          tempN05Item = { ...item, Description_1: Name_Product, Ln_Ty: "N" };
-        } else {
-          // เพิ่มสินค้าในกลุ่ม
-          responseSN.push({
-            ...item,
-            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
-            Description_2: `${Product_description}`,
-            Ln_Ty: "N",
-            Branch__Plant: "P01",
-            Requested_Date: Product_requestDate,
-          });
-
-          responseSO.push({
-            ...item,
-            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
-            Description_2: `${Product_description}`,
-            Ln_Ty: "N",
-            Branch__Plant: "P01",
-            Requested_Date: Product_requestDate,
-          });
-        }
+        // เพิ่มสินค้าในกลุ่ม
+        response.push({
+          ...item,
+          Description_1: `${Name_Product} ${width}X${long} ${Product_description}`,
+          Description_2: `${Name_Product} ${width}X${long} ${Product_description}`,
+          Ln_Ty: "S",
+          Branch__Plant: "P01",
+          Requested_Date: Product_requestDate,
+          
+        });
       }
     );
 
@@ -321,8 +309,8 @@ ORDER BY Product_class ASC;`
 
     let formattedDate = `${day}/${month}/${year}`;
 
-    const OrderSN = await fetch(
-      "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSN",
+    const apiResponse = await fetch(
+      "http://ptkjdeweb:9083/jderest/v3/orchestrator/CreateSalesOrder_KOR",
       {
         method: "POST",
         headers: {
@@ -352,44 +340,7 @@ ORDER BY Product_class ASC;`
       }
     );
 
-    const insertSN = await OrderSN.json();
-
-    if (insertSN["Previous Order"]) {
-      const OrderSO = await fetch(
-        "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSO",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: "ITSKOR",
-            password: "itskor",
-            Business_Unit: "11111",
-            Sold_To: "107932",
-            Ship_To: "107932",
-            Order_Date: { formattedDate },
-            Delivery_Instructions1: insertSN["Previous Order"],
-            Tax_Rate_Code: "OVAT7",
-            ProjectNo: "107933",
-            Customer_PO: getresult.recordset[0]?.Product_ProjectName.substring(
-              0,
-              25
-            ),
-            GridIn_1_3: responseSO,
-            GridIn_1_4: [
-              {
-                Sales_Rep_or_Group: "3686",
-              },
-            ],
-            P4210_Version: "",
-          }),
-        }
-      );
-
-      const insertSO = await OrderSO.json();
-
-      console.log();
+    const apiResult = await apiResponse.json();    
 
       // ส่ง response กลับไปยังผู้ใช้งาน
       res.status(200).json({ insertSN, insertSO });
@@ -427,18 +378,16 @@ app.post("/api/post/Master", async (req, res) => {
     const datetoday = new Date();
     const formattedDate = datetoday.toISOString().split("T")[0];
 
-    const daterequest = request_date.split("T")[0];
-
+    const daterequest = request_date.split('T')[0]
+    
     const result = await pool
       .request()
       .input("Order_date", sql.VarChar, formattedDate)
       .input("FG_Product", sql.VarChar, FG_Product)
       .input("Name_Project", sql.VarChar, Name_Project)
       .input("Name_Class", sql.VarChar, Name_Class)
-      .input("SN_Number", sql.Int, SN)
-      .input("SN_TY", sql.VarChar, SN_TY)
-      .input("SO_Number", sql.Int, SO)
-      .input("SO_TY", sql.VarChar, SO_TY)
+      .input("SO", sql.VarChar, "")
+      .input("SN", sql.VarChar, "")
       .input("Name_Product", sql.VarChar, Name_Product)
       .input("Category_Product", sql.VarChar, Category_Product)
       .input("Width", sql.Int, Width)
@@ -672,101 +621,6 @@ app.post("/api/post/OrderDetail", async (req, res) => {
   } catch (error) {
     console.error("SQL error:", error);
     res.status(500).send("Error querying the database");
-  }
-});
-
-app.post("/api/post/updateClass", async (req, res) => {
-  try {
-    const pool = await sql.connect(config);
-
-    const { draggedItem, item } = req.body;
-
-    const result = await pool
-      .request()
-      .input("Product_ID", sql.Int, draggedItem.Product_ID)
-      .input("item", sql.VarChar, item)
-      .execute("db_update_Class");
-
-    res.status(200).json(result.recordset);
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-app.post("/api/update/NameProject", async (req, res) => {
-  try {
-    const pool = await sql.connect(config);
-
-    const { nameProject, username } = req.body;
-
-    const result = await pool
-      .request()
-      .input("nameProject", sql.VarChar, nameProject)
-      .input("username", sql.VarChar, username.username)
-      .execute("db_update_Project");
-
-    res.status(200).json(result.recordset);
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-app.post("/api/post/Edit", async (req, res) => {
-  try {
-    const pool = await sql.connect(config);
-
-    const { valueEditHeader, valueheader, username } = req.body;
-
-    if (valueEditHeader != valueheader) {
-      const result = await pool
-        .request()
-        .input("valueEditHeader", sql.VarChar, valueEditHeader)
-        .input("valueheader", sql.VarChar, valueheader)
-        .input("username", sql.VarChar, username.username)
-        .execute("db_edit_Header");
-      res.status(200).json(result.recordset);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-app.post("/api/post/EditTextHeader", async (req, res) => {
-  try {
-    const pool = await sql.connect(config);
-
-    const { valueDefaultProject, newTextProject, username } = req.body;
-
-    if (valueDefaultProject != newTextProject) {
-      const result = await pool
-        .request()
-        .input("valueDefaultProject", sql.VarChar, valueDefaultProject)
-        .input("newTextProject", sql.VarChar, newTextProject)
-        .input("username", sql.VarChar, username.username)
-        .execute("db_edit_Header_Project");
-      res.status(200).json(result.recordset);
-    }else{
-      res.status(200).json();
-    }
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-app.post("/api/Report", async (req, res) => {
-  try {
-    const pool = await sql.connect(config);
-
-    const { Name_Project } = req.body;
-
-    const result = await pool
-      .request()
-      .input("Name_Project", sql.VarChar, Name_Project)
-      .execute("db_Report");
-
-    res.status(200).json(result.recordset);
-  } catch (error) {
-    console.error(error);
   }
 });
 

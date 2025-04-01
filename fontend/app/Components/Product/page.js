@@ -60,7 +60,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch("http://10.15.0.23:5006/api/get/MasterData");
+      const res = await fetch("http://localhost:5006/api/get/MasterData");
       const data = await res.json();
       setMasterData(data);
     };
@@ -69,7 +69,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://10.15.0.23:5006/api/get/product");
+      const response = await fetch("http://localhost:5006/api/get/product");
       const fetdata = await response.json();
 
       setData(fetdata);
@@ -78,7 +78,7 @@ function page() {
     const fetchBasket = async () => {
       if (!username) return;
       try {
-        const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+        const res = await fetch("http://localhost:5006/api/post/checkbasket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
@@ -99,7 +99,7 @@ function page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://10.15.0.23:5006/api/get/DashBoard");
+      const response = await fetch("http://localhost:5006/api/get/DashBoard");
       const fetdata = await response.json();
 
       setDashBoard(fetdata);
@@ -116,7 +116,7 @@ function page() {
 
   const handlemodal = async (Name_Product, Number_FG) => {
     try {
-      const res = await fetch(`http://10.15.0.23:5006/api/find/FG`, {
+      const res = await fetch(`http://localhost:5006/api/find/FG`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({ Number_FG }),
@@ -130,7 +130,7 @@ function page() {
     }
 
     try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/category");
+      const res = await fetch("http://localhost:5006/api/post/category");
 
       const response = await res.json();
 
@@ -157,7 +157,7 @@ function page() {
   };
 
   const page_Detail = async () => {
-    const res = await fetch(`http://10.15.0.23:5006/api/get/import_file`);
+    const res = await fetch(`http://localhost:5006/api/get/import_file`);
     const fetchdata = await res.json();
 
     setImportFile(fetchdata);
@@ -198,7 +198,7 @@ function page() {
       request_Date
     ) {
       try {
-        const res = await fetch("http://10.15.0.23:5006/api/post/basket", {
+        const res = await fetch("http://localhost:5006/api/post/basket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
@@ -254,14 +254,23 @@ function page() {
   const handlesubmit = async () => {
     setLoading(true);
 
+
     try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/ERPRecord", {
+      const res = await fetch("http://localhost:5006/api/update/NameProject", {
         method: "POST",
-        headers: { "Content-type": "application/json" },
-        body: JSON.stringify({
-          username,
-        }),
-      });
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nameProject, username })
+      })
+
+      if (res.ok) {
+        try {
+          const res = await fetch("http://localhost:5006/api/post/ERPRecord", {
+            method: "POST",
+            headers: { "Content-type": "application/json" },
+            body: JSON.stringify({
+              username,
+            }),
+          });
 
       const response = await res.json();
 
@@ -326,7 +335,7 @@ function page() {
     if (confirm(`ยืนยันการลบ`)) {
       try {
         const fetchDelete = await fetch(
-          "http://10.15.0.23:5006/api/post/DeleteBasket",
+          "http://localhost:5006/api/post/DeleteBasket",
           {
             method: "POST",
             headers: { "Content-type": "application/json" },
@@ -337,7 +346,7 @@ function page() {
         );
 
         try {
-          const res = await fetch("http://10.15.0.23:5006/api/get/basket");
+          const res = await fetch("http://localhost:5006/api/get/basket");
           const response = await res.json();
           setProduct_Basket(response);
         } catch (error) {
@@ -429,7 +438,7 @@ function page() {
     formData.append("Description", updatePDFDiscription);
     formData.append("Order", numberOrder);
 
-    const res = await fetch(`http://10.15.0.23:5006/api/post/importFile`, {
+    const res = await fetch(`http://localhost:5006/api/post/importFile`, {
       method: "POST",
       body: formData,
     });
@@ -465,7 +474,7 @@ function page() {
   const OrderDetail = async (OrderNumber) => {
     setModelDetail(true);
 
-    const res = await fetch(`http://10.15.0.23:5006/api/post/OrderDetail`, {
+    const res = await fetch(`http://localhost:5006/api/post/OrderDetail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ OrderNumber }),
@@ -702,30 +711,43 @@ function page() {
           </div>
         </div>
       )}
+      {modelNameProject === true && (
+        <div className="modelproject">
+          <div className="modelproject-content">
+            <div className="row">
+              <div className="text-center col-12">
+                <label>ระบุโครงการ</label>
+              </div>
+              <div className="col-12 mb-3 mt-3">
+                <input className="form-control" placeholder="โครงการ" onChange={(e) => setNameProject(e.target.value)} />
+              </div>
+              <div className="col-6 d-flex justify-content-center"><button className="btn btn-danger" onClick={() => setModelNameProject(false)}>ยกเลิก</button></div>
+              <div className="col-6 d-flex justify-content-center"><button className="btn btn-primary" onClick={() => handlesubmit()}>บันทึก</button></div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className={`navbar-menu text-center`}>
         <div className="row">
           <div
-            className={`col border-btn ${
-              header_select == 0 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 0 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_listproduct}>
               แดชบอร์ด
             </h5>
           </div>
           <div
-            className={`col border-btn ${
-              header_select == 1 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 1 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_product}>
               ขอยื่นราคา
             </h5>
           </div>
           <div
-            className={`col border-btn ${
-              header_select == 3 ? "header-select" : ""
-            }`}
+            className={`col border-btn ${header_select == 3 ? "header-select" : ""
+              }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_Detail}>
               แนบแบบโครงการ
@@ -828,8 +850,8 @@ function page() {
                                     .getDate()
                                     .toString()
                                     .padStart(2, "0")}-${(date.getMonth() + 1)
-                                    .toString()
-                                    .padStart(2, "0")}-${date.getFullYear()}`;
+                                      .toString()
+                                      .padStart(2, "0")}-${date.getFullYear()}`;
                                 })()}
                               </td>
                               <td align="center">
@@ -895,8 +917,8 @@ function page() {
                                 .getDate()
                                 .toString()
                                 .padStart(2, "0")}-${(date.getMonth() + 1)
-                                .toString()
-                                .padStart(2, "0")}-${date.getFullYear()}`;
+                                  .toString()
+                                  .padStart(2, "0")}-${date.getFullYear()}`;
                             })()}
                           </td>
                           <td>{element.SO_TY}</td>
@@ -911,8 +933,8 @@ function page() {
                                 .getDate()
                                 .toString()
                                 .padStart(2, "0")}-${(date.getMonth() + 1)
-                                .toString()
-                                .padStart(2, "0")}-${date.getFullYear()}`;
+                                  .toString()
+                                  .padStart(2, "0")}-${date.getFullYear()}`;
                             })()}
                           </td>
                           <td className="text-center">{element.Product_pcs}</td>
