@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./page.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import "./Components/Product/Loading.css"
 
 export default function Home() {
   const router = useRouter();
@@ -13,6 +14,11 @@ export default function Home() {
   const [checklogin, setCheckLogin] = useState(null);
   const [animateOut, setAnimateOut] = useState(false);
   const [animateouttop, setAnimateOutTop] = useState(false);
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+     setLoading(false)
+  })
 
   const handleLogin = async () => {
     try {
@@ -48,13 +54,16 @@ export default function Home() {
       handleLogin();
     }
   }
-  
-  console.log(username)
-  console.log(password)
 
   return (
+  <>
+      {loading && (
+        <div className="form-loading">
+          <span className="loader"></span>
+        </div>
+      )}
     <div className="container mt-5 p-5">
-      <div className="row">
+    	<div className="row">
         <div className={`col-12 ${animateouttop ? "slide-out-top" : ""}`} align="center">
           <Image
             className="Logo-img"
@@ -100,5 +109,7 @@ export default function Home() {
         </div>
       </div>
     </div>
+  </>
+  
   );
 }

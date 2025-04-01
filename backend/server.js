@@ -5,7 +5,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const app = express();
-const port = 8000;
+const port = 5006;
 
 app.use(cors());
 app.use(express.json());
@@ -22,18 +22,10 @@ const config = {
   },
 };
 
-// ตั้งค่าพาธสำหรับบันทึกไฟล์ในเครื่องเครือข่าย
-const uploadPath = "\\\\192.168.199.104\\File_Uploads\\";
-
-// ตรวจสอบว่าพาธมีอยู่หรือไม่ ถ้าไม่มีให้สร้าง
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
-}
-
 // ตั้งค่า Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadPath); // บันทึกไฟล์ไปยังเซิร์ฟเวอร์เครือข่าย
+    cb(null, "/home/ptkdev/Tre/Korex_Quick/Korex_BE/File_upload"); // บันทึกไฟล์ไปยังเซิร์ฟเวอร์เครือข่าย
   },
   filename: (req, file, cb) => {
     const safeFilename = Buffer.from(file.originalname, "latin1").toString(
@@ -149,7 +141,7 @@ app.post("/api/post/basket", async (req, res) => {
     const pool = await sql.connect(config);
 
     const {
-      projectName,
+      nameProject,
       projectClass,
       standard,
       number_FG,
@@ -166,6 +158,8 @@ app.post("/api/post/basket", async (req, res) => {
 
     const result = await pool
       .request()
+      .input("nameProject", sql.VarChar, nameProject)
+      .input("projectClass", sql.VarChar, projectClass)
       .input("Name_Product", sql.VarChar, standard)
       .input("Standard", sql.VarChar, getProduct)
       .input("Category", sql.VarChar, getCategory)
@@ -177,9 +171,7 @@ app.post("/api/post/basket", async (req, res) => {
       .input("member", sql.VarChar, username.username)
       .input("number_FG", sql.VarChar, number_FG)
       .input("Product_description", sql.VarChar, textArea)
-      .input("projectName", sql.VarChar, projectName)
-      .input("projectClass", sql.VarChar, projectClass)
-      .execute("db_Insert_basket");
+      .execute(`db_Insert_basket`);
 
     res.status(200).json(result.recordset);
   } catch (error) {
@@ -231,16 +223,30 @@ app.post("/api/post/ERPRecord", async (req, res) => {
       .request()
       .input("username", sql.VarChar, username)
       .query(
-        `SELECT Name_Product AS Name_Product, Product_pcs AS Quantity_Ordered, Product_FG AS Item_Number, 
-          Product_price AS Unit_Price, Product_width AS width, Product_long AS long, Product_description AS Product_description,
-          Product_ProjectName, Product_class, Product_requestDate
-          FROM sproduct_basket 
-          WHERE Product_member = @username Order by Product_class ASC`
+        `SELECT 
+    Name_Product AS Name_Product, 
+    Product_pcs AS Quantity_Ordered, 
+    Product_FG AS Item_Number, 
+    Product_price AS Unit_Price, 
+    Product_width AS width, 
+    Product_long AS long, 
+    LEFT(Product_description, 30) AS Product_description, 
+    Product_ProjectName, 
+    Product_class, 
+    Product_requestDate
+FROM sproduct_basket 
+WHERE Product_member = @username 
+ORDER BY Product_class ASC;`
       );
 
-    const response = [];
+    const responseSN = [];
+    const responseSO = [];
     let previousClass = null;
 
+    let hasN05 = false; // ตัวแปรเช็คว่ามี 'N05' หรือไม่
+    let tempN05Item = null; // เก็บข้อมูลของ 'N05' ไว้ก่อน
+
+    ///SN
     getresult.recordset.forEach(
       ({
         width,
@@ -254,7 +260,7 @@ app.post("/api/post/ERPRecord", async (req, res) => {
       }) => {
         // ถ้า Product_class เปลี่ยน ให้เพิ่มแถวใหม่ที่มี Ln_Ty = "T"
         if (Product_class !== previousClass) {
-          response.push({
+          responseSN.push({
             Quantity_Ordered: 1,
             Item_Number: "",
             Unit_Price: 1,
@@ -262,21 +268,51 @@ app.post("/api/post/ERPRecord", async (req, res) => {
             Ln_Ty: "T",
             Branch__Plant: "P01",
           });
+
+          responseSO.push({
+            Quantity_Ordered: 1,
+            Item_Number: "",
+            Unit_Price: 1,
+            Description_1: Product_class,
+            Ln_Ty: "T",
+            Branch__Plant: "P01",
+          });
+
           previousClass = Product_class; // อัปเดตค่า Product_class ปัจจุบัน
         }
 
-        // เพิ่มสินค้าในกลุ่ม
-        response.push({
-          ...item,
-          Description_1: `${Name_Product} ${width}X${long} ${Product_description}`,
-          Description_2: `${Name_Product} ${width}X${long} ${Product_description}`,
-          Ln_Ty: "S",
-          Branch__Plant: "P01",
-          Requested_Date: Product_requestDate,
-          
-        });
+        // ถ้า Item_Number คือ 'N05' ให้เก็บค่าไว้ก่อน
+        if (item.Item_Number === "N05") {
+          hasN05 = true;
+          tempN05Item = { ...item, Description_1: Name_Product, Ln_Ty: "N" };
+        } else {
+          // เพิ่มสินค้าในกลุ่ม
+          responseSN.push({
+            ...item,
+            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
+            Description_2: `${Product_description}`,
+            Ln_Ty: "N",
+            Branch__Plant: "P01",
+            Requested_Date: Product_requestDate,
+          });
+
+          responseSO.push({
+            ...item,
+            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
+            Description_2: `${Product_description}`,
+            Ln_Ty: "N",
+            Branch__Plant: "P01",
+            Requested_Date: Product_requestDate,
+          });
+        }
       }
     );
+
+    // ถ้ามี 'N05' ให้เพิ่มท้ายสุด
+    if (hasN05 && tempN05Item) {
+      responseSN.push(tempN05Item);
+      responseSO.push(tempN05Item);
+    }
 
     const date = new Date();
     const day = String(date.getDate()).padStart(2, "0");
@@ -285,8 +321,8 @@ app.post("/api/post/ERPRecord", async (req, res) => {
 
     let formattedDate = `${day}/${month}/${year}`;
 
-    const apiResponse = await fetch(
-      "http://ptkjdeweb:9083/jderest/v3/orchestrator/CreateSalesOrder_KOR",
+    const OrderSN = await fetch(
+      "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSN",
       {
         method: "POST",
         headers: {
@@ -295,14 +331,17 @@ app.post("/api/post/ERPRecord", async (req, res) => {
         body: JSON.stringify({
           username: "ITSKOR",
           password: "itskor",
-          Business_Unit: "17005",
-          Sold_To: "1",
-          Ship_To: "1",
+          Business_Unit: "11111",
+          Sold_To: "107932",
+          Ship_To: "107933",
           Order_Date: { formattedDate },
           Tax_Rate_Code: "OVAT7",
           ProjectNo: "1",
-          Customer_PO: getresult.recordset[0]?.Product_ProjectName,
-          GridIn_1_3: response,
+          Customer_PO: getresult.recordset[0]?.Product_ProjectName.substring(
+            0,
+            25
+          ),
+          GridIn_1_3: responseSN,
           GridIn_1_4: [
             {
               Sales_Rep_or_Group: "3686",
@@ -311,12 +350,50 @@ app.post("/api/post/ERPRecord", async (req, res) => {
           P4210_Version: "",
         }),
       }
-    );    
+    );
 
-    const apiResult = await apiResponse.json();    
+    const insertSN = await OrderSN.json();
 
-    // ส่ง response กลับไปยังผู้ใช้งาน
-    res.status(200).json(apiResult);
+    if (insertSN["Previous Order"]) {
+      const OrderSO = await fetch(
+        "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSO",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "ITSKOR",
+            password: "itskor",
+            Business_Unit: "11111",
+            Sold_To: "107932",
+            Ship_To: "107932",
+            Order_Date: { formattedDate },
+            Delivery_Instructions1: insertSN["Previous Order"],
+            Tax_Rate_Code: "OVAT7",
+            ProjectNo: "107933",
+            Customer_PO: getresult.recordset[0]?.Product_ProjectName.substring(
+              0,
+              25
+            ),
+            GridIn_1_3: responseSO,
+            GridIn_1_4: [
+              {
+                Sales_Rep_or_Group: "3686",
+              },
+            ],
+            P4210_Version: "",
+          }),
+        }
+      );
+
+      const insertSO = await OrderSO.json();
+
+      console.log();
+
+      // ส่ง response กลับไปยังผู้ใช้งาน
+      res.status(200).json({ insertSN, insertSO });
+    }
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด", error: error.message });
@@ -331,8 +408,10 @@ app.post("/api/post/Master", async (req, res) => {
       FG_Product,
       Name_Project,
       Name_Class,
-      // SO,
-      // SN,
+      SN,
+      SN_TY,
+      SO,
+      SO_TY,
       Name_Product,
       Category_Product,
       Width,
@@ -342,22 +421,24 @@ app.post("/api/post/Master", async (req, res) => {
       username,
       Description,
       request_date,
-      ERP_Order_Number
+      ERP_Order_Number,
     } = req.body;
 
     const datetoday = new Date();
-    const formattedDate = datetoday.toISOString().split('T')[0];
+    const formattedDate = datetoday.toISOString().split("T")[0];
 
-    const daterequest = request_date.split('T')[0]
-    
+    const daterequest = request_date.split("T")[0];
+
     const result = await pool
       .request()
       .input("Order_date", sql.VarChar, formattedDate)
       .input("FG_Product", sql.VarChar, FG_Product)
       .input("Name_Project", sql.VarChar, Name_Project)
       .input("Name_Class", sql.VarChar, Name_Class)
-      .input("SO", sql.VarChar, "")
-      .input("SN", sql.VarChar, "")
+      .input("SN_Number", sql.Int, SN)
+      .input("SN_TY", sql.VarChar, SN_TY)
+      .input("SO_Number", sql.Int, SO)
+      .input("SO_TY", sql.VarChar, SO_TY)
       .input("Name_Product", sql.VarChar, Name_Product)
       .input("Category_Product", sql.VarChar, Category_Product)
       .input("Width", sql.Int, Width)
@@ -439,100 +520,139 @@ app.get("/api/get/import_file", async (req, res) => {
 });
 
 app.post(
-  `/api/post/importFile`,
-  upload.array("files", 10), // รองรับหลายไฟล์ (สูงสุด 10)
+  "/api/post/importFile",
+  upload.array("files", 10),
   async (req, res) => {
-    const pool = await sql.connect(config);
-    const { Project, Description, Order } = req.body;
+    if (!req.files?.length)
+      return res
+        .status(400)
+        .json({ message: false, error: "กรุณาอัปโหลดไฟล์อย่างน้อย 1 ไฟล์" });
 
-    try {
-      // 🛑 เช็คว่ามีไฟล์อัปโหลดมาหรือไม่
-      if (!req.files || req.files.length === 0) {
-        return res
-          .status(400)
-          .json({ message: false, error: "กรุณาอัปโหลดไฟล์อย่างน้อย 1 ไฟล์" });
-      }
+    const filePaths = req.files.map((file) =>
+      path.join("/mnt/fileupload", file.filename)
+    );
 
-      let allFilesSaved = true;
-      let failedFiles = []; // เก็บรายการไฟล์ที่ไม่สามารถบันทึกได้
-
-      // 🔄 Loop ไฟล์ทั้งหมดที่อัปโหลด
-      for (const file of req.files) {
-        try {
-          const response = await fetch(
-            `http://192.168.199.104:9083/jderest/v3/orchestrator/Korex_FileUpload`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization:
-                  "Basic " + Buffer.from("ITSCRM:itscrm").toString("base64"),
-              },
-              body: JSON.stringify({
-                FileName1: file.filename,
-                DOC: Order,
-                DCT: "OK",
-              }),
-            }
-          );
-
-          if (!response.ok) {
-            console.error(
-              `❌ Error uploading ${file.filename}: ${response.statusText}`
+    if (filePaths) {
+      try {
+        const pool = await sql.connect(config);
+        for (const file of req.files) {
+          try {
+            const response = await fetch(
+              "http://192.168.199.104:9083/jderest/v3/orchestrator/Korex_FileUpload",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization:
+                    "Basic " + Buffer.from("ITSCRM:itscrm").toString("base64"),
+                },
+                body: JSON.stringify({
+                  FileName1: file.filename,
+                  DOC: req.body.Order,
+                  DCT: "SO",
+                }),
+              }
             );
-            allFilesSaved = false;
-            failedFiles.push(file.filename);
-            continue; // ข้ามไปไฟล์ถัดไป
+
+            const responseApi = await response.json();
+
+            if (!response.ok) throw new Error("Upload API failed");
+
+            const PDF_Data = await pool
+              .request()
+              .input("ERP_Order_Number", sql.VarChar, req.body.Order)
+
+              .query(
+                "SELECT * FROM master_data WHERE ERP_Order_Number = @ERP_Order_Number"
+              );
+
+            const data = PDF_Data.recordset;
+
+            const fileNames = req.files.map((file) => file.filename).join(", ");
+
+            const dbFileNames = data.map((item) => item.PDF_name).join(", ");
+
+            const finalFileNames = `${dbFileNames}, ${fileNames}`;
+
+            await pool
+              .request()
+              .input("Name_PDF", sql.VarChar, fileNames)
+              .input("Order", sql.VarChar, req.body.Order)
+              .execute("db_upload_namePDF");
+          } catch (error) {
+            console.error(`❌ Error processing file ${file.filename}:`, error);
+            return res.status(500).json({ message: "fail", error });
           }
-
-          const responseApi = await response.json();
-
-          // 🛑 ตรวจสอบค่าที่ได้จาก API
-          if (!responseApi.ConnectorRequest1?.uniquefilename) {
-            console.error(
-              `❌ API response missing 'uniquefilename' for ${file.filename}`
-            );
-            allFilesSaved = false;
-            failedFiles.push(file.filename);
-            continue;
-          }
-
-          // 💾 บันทึกข้อมูลลงฐานข้อมูล
-          await pool
-            .request()
-            .input(
-              "Name_PDF",
-              sql.VarChar,
-              responseApi.ConnectorRequest1.uniquefilename
-            )
-            .input("Order", sql.VarChar, Order)
-            .execute("db_upload_namePDF");
-        } catch (error) {
-          console.error(`❌ Error processing file ${file.filename}:`, error);
-          allFilesSaved = false;
-          failedFiles.push(file.filename);
         }
-      }
 
-      // 📢 ส่ง Response กลับ
-      if (allFilesSaved) {
-        res.json({
-          message: true,
-          success: "อัปโหลดและบันทึกไฟล์ทั้งหมดสำเร็จ",
-        });
-      } else {
-        res.status(500).json({
-          message: false,
-          error: "เกิดข้อผิดพลาดบางไฟล์อาจไม่ได้ถูกบันทึก",
-          failedFiles: failedFiles,
-        });
+        res.status(200).json({ message: "true" });
+      } catch (error) {
+        console.error("❌ Error in file upload:", error);
+        res
+          .status(500)
+          .json({ message: false, error: "เกิดข้อผิดพลาดในเซิร์ฟเวอร์" });
       }
-    } catch (error) {
-      console.error("❌ Error in file upload:", error);
-      res.status(500).json({
-        message: false,
-        error: "เกิดข้อผิดพลาดในเซิร์ฟเวอร์",
-      });
+    }
+  }
+);
+
+app.post(
+  "/api/update/importFile",
+  upload.array("files", 10),
+  async (req, res) => {
+    if (!req.files?.length)
+      return res
+        .status(400)
+        .json({ message: false, error: "กรุณาอัปโหลดไฟล์อย่างน้อย 1 ไฟล์" });
+
+    const filePaths = req.files.map((file) =>
+      path.join("/mnt/fileupload", file.filename)
+    );
+
+    if (filePaths) {
+      try {
+        const pool = await sql.connect(config);
+        for (const file of req.files) {
+          try {
+            const response = await fetch(
+              "http://192.168.199.104:9083/jderest/v3/orchestrator/Korex_FileUpload",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization:
+                    "Basic " + Buffer.from("ITSCRM:itscrm").toString("base64"),
+                },
+                body: JSON.stringify({
+                  FileName1: file.filename,
+                  DOC: req.body.Order,
+                  DCT: "SO",
+                }),
+              }
+            );
+
+            const responseApi = await response.json();
+
+            if (!response.ok) throw new Error("Upload API failed");
+
+            await pool
+              .request()
+              .input("Name_PDF", sql.VarChar, finalFileNames)
+              .input("Order", sql.VarChar, req.body.Order)
+              .execute("db_update_upload_namePDF");
+          } catch (error) {
+            console.error(`❌ Error processing file ${file.filename}:`, error);
+            return res.status(500).json({ message: "fail", error });
+          }
+        }
+
+        res.status(200).json({ message: "true" });
+      } catch (error) {
+        console.error("❌ Error in file upload:", error);
+        res
+          .status(500)
+          .json({ message: false, error: "เกิดข้อผิดพลาดในเซิร์ฟเวอร์" });
+      }
     }
   }
 );
@@ -552,6 +672,101 @@ app.post("/api/post/OrderDetail", async (req, res) => {
   } catch (error) {
     console.error("SQL error:", error);
     res.status(500).send("Error querying the database");
+  }
+});
+
+app.post("/api/post/updateClass", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { draggedItem, item } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Product_ID", sql.Int, draggedItem.Product_ID)
+      .input("item", sql.VarChar, item)
+      .execute("db_update_Class");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/update/NameProject", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { nameProject, username } = req.body;
+
+    const result = await pool
+      .request()
+      .input("nameProject", sql.VarChar, nameProject)
+      .input("username", sql.VarChar, username.username)
+      .execute("db_update_Project");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/Edit", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { valueEditHeader, valueheader, username } = req.body;
+
+    if (valueEditHeader != valueheader) {
+      const result = await pool
+        .request()
+        .input("valueEditHeader", sql.VarChar, valueEditHeader)
+        .input("valueheader", sql.VarChar, valueheader)
+        .input("username", sql.VarChar, username.username)
+        .execute("db_edit_Header");
+      res.status(200).json(result.recordset);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/EditTextHeader", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { valueDefaultProject, newTextProject, username } = req.body;
+
+    if (valueDefaultProject != newTextProject) {
+      const result = await pool
+        .request()
+        .input("valueDefaultProject", sql.VarChar, valueDefaultProject)
+        .input("newTextProject", sql.VarChar, newTextProject)
+        .input("username", sql.VarChar, username.username)
+        .execute("db_edit_Header_Project");
+      res.status(200).json(result.recordset);
+    }else{
+      res.status(200).json();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/Report", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { Name_Project } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Name_Project", sql.VarChar, Name_Project)
+      .execute("db_Report");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
   }
 });
 

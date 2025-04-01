@@ -15,7 +15,6 @@ function page() {
 
   const [data, setData] = useState([]);
   const [product_basket, setProduct_Basket] = useState([]);
-  const [modal, setModal] = useState(0);
   const [swith_page, setSwith_Page] = useState(0);
   const [dashboard, setDashBoard] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,11 +22,10 @@ function page() {
   const [modelFile, setModelFile] = useState(0);
   const [importFile, setImportFile] = useState(null);
   const [modelDetail, setModelDetail] = useState(false);
-  const [checknameProject, setCheckNameProject] = useState(false);
+  const [heaerNameProject, setHeaderNameProject] = useState(false);
   const [masterData, setMasterData] = useState([]);
 
   const username = JSON.parse(localStorage.getItem("username"));
-  const password = JSON.parse(localStorage.getItem("password"));
 
   //Get DataInput
   const [standard, setStandard] = useState("");
@@ -38,12 +36,13 @@ function page() {
   const [getCategory, setGetCategory] = useState("");
   const [getWidth, setGetWidth] = useState("");
   const [getLong, setGetLong] = useState("");
-  const [getPcs, setGetPcs] = useState(0);
-  const [getPrice, setGetPrice] = useState(0);
+  const [getPcs, setGetPcs] = useState("");
+  const [getPrice, setGetPrice] = useState("");
   const [number_FG, setNumber_FG] = useState(0);
   const [request_Date, setRequest_Date] = useState("");
+  const [nameProject, setNameProject] = useState("");
+  const [recordValueEdit, setRecordValueEdit] = useState("");
 
-  const [projectName, setProjectName] = useState("");
   const [projectClass, setProjectClass] = useState("");
   const [numberOrder, setNumberOrder] = useState(0);
   const [updatePDFProject, setUpdatePDFProject] = useState("");
@@ -52,6 +51,12 @@ function page() {
   const [insertmultifile, setInsertMultifile] = useState([Date.now()]); // ใช้ timestamp ป้องกัน key ซ้ำ
 
   const [detailOrder, setDetailOrder] = useState([]);
+  const [checkEditHeader, setCheckEditHeader] = useState(0);
+  const [valueEditHeader, setValueEditHeader] = useState("");
+  const [valueDefaultProject, setValueDefaultProject] = useState("");
+  const [newTextProject, setNewTextProject] = useState("");
+
+  const [openInputProject, setOpenInputProject] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,7 +140,6 @@ function page() {
     }
 
     setStandard(Name_Product);
-    setModal(1);
   };
 
   const Logout = () => {
@@ -152,55 +156,53 @@ function page() {
     setSwith_Page(1);
   };
 
-  const page_basket = () => {
-    setHeader_Select(2);
-    setSwith_Page(2);
-  };
-
   const page_Detail = async () => {
     const res = await fetch(`http://10.15.0.23:5006/api/get/import_file`);
     const fetchdata = await res.json();
 
     setImportFile(fetchdata);
 
-    setHeader_Select(3);
-    setSwith_Page(3);
-  };
-
-  const handleCancel = () => {
-    setModal(0);
+    setHeader_Select(2);
+    setSwith_Page(2);
   };
 
   const handleProductSubmit = async () => {
-    if (getProduct == "") {
-      alert("เลือกขนาดสินค้า");
-    } else if (getWidth == "") {
-      alert("ระบุความกว้าง");
-    } else if (getLong == "") {
-      alert("ระบุความยาว");
-    } else if (getPcs == "") {
-      alert("ระบุจำนวน");
-    } else if (getPrice == "") {
-      alert("ระบุราคา");
-    } else if (request_Date == "") {
-      alert("ระบุวันที่");
+    if (number_FG != "N05") {
+      if (nameProject == "") {
+        alert("ระบุโครงการ");
+      } else if (projectClass == "") {
+        alert("ระบุหัวข้อ");
+      } else if (getProduct == "") {
+        alert("เลือกขนาดสินค้า");
+      } else if (getWidth == "") {
+        alert("ระบุความกว้าง");
+      } else if (getLong == "") {
+        alert("ระบุความยาว");
+      } else if (getPcs == "") {
+        alert("ระบุจำนวน");
+      } else if (getPrice == "") {
+        alert("ระบุราคา");
+      } else if (request_Date == "") {
+        alert("ระบุวันที่");
+      }
     }
 
     if (
-      standard != "" &&
-      getProduct != "" &&
-      getCategory != "" &&
-      getWidth != "" &&
-      getLong != "" &&
-      getPcs != "" &&
-      request_Date != ""
+      nameProject &&
+      projectClass &&
+      getProduct &&
+      getWidth &&
+      getLong &&
+      getPcs &&
+      getPrice &&
+      request_Date
     ) {
       try {
         const res = await fetch("http://10.15.0.23:5006/api/post/basket", {
           method: "POST",
           headers: { "Content-type": "application/json" },
           body: JSON.stringify({
-            projectName,
+            nameProject,
             projectClass,
             standard,
             number_FG,
@@ -220,27 +222,38 @@ function page() {
       } catch (error) {
         console.error(error);
       }
-      setModal(0);
-    }
 
-    try {
-      const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
-        method: "POST",
-        headers: { "Content-type": "application/json" },
-        body: JSON.stringify({
-          username,
-        }),
-      });
+      setHeaderNameProject(nameProject);
+      setProjectClass("");
+      setGetProduct("");
+      setGetCategory("");
+      setGetWidth(0);
+      setGetLong(0);
+      setGetPcs("");
+      setGetPrice("");
+      setRequest_Date(0);
+      setTextArea("");
 
-      const response = await res.json();
-      setProduct_Basket(response);
-    } catch (error) {
-      console.error(error);
+      try {
+        const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+          method: "POST",
+          headers: { "Content-type": "application/json" },
+          body: JSON.stringify({
+            username,
+          }),
+        });
+
+        const response = await res.json();
+        setProduct_Basket(response);
+      } catch (error) {
+        console.error(error);
+      }
     }
   };
 
   const handlesubmit = async () => {
     setLoading(true);
+
     try {
       const res = await fetch("http://10.15.0.23:5006/api/post/ERPRecord", {
         method: "POST",
@@ -251,17 +264,21 @@ function page() {
       });
 
       const response = await res.json();
-      const newNumberOrder = response["Previous Order"];
 
-      sessionStorage.setItem("numberOrder", newNumberOrder);
+      const newNumberOrderSN = response.insertSN?.["Previous Order"];
+      const Pre_Order_typeSN = response.insertSN?.["Previous Order Type"];
 
-      if (newNumberOrder) {
+      const newNumberOrderSO = response.insertSO?.["Previous Order"];
+      const Pre_Order_typeSO = response.insertSO?.["Previous Order Type"];
+
+      sessionStorage.setItem("numberOrder", newNumberOrderSO);
+
+      if (newNumberOrderSO) {
         const storedNumberOrder = sessionStorage.getItem("numberOrder");
+
         try {
           const responses = await Promise.all(
             product_basket.map(async (item) => {
-              console.log(item);
-
               const res = await fetch(
                 "http://10.15.0.23:5006/api/post/Master",
                 {
@@ -269,10 +286,12 @@ function page() {
                   headers: { "Content-type": "application/json" },
                   body: JSON.stringify({
                     FG_Product: item.Product_FG,
-                    Name_Project: item.Product_Projectname,
+                    Name_Project: heaerNameProject,
                     Name_Class: item.Product_class,
-                    // SO: item.SO,
-                    // SN: item.SN,
+                    SN: newNumberOrderSN,
+                    SN_TY: Pre_Order_typeSN,
+                    SO: newNumberOrderSO,
+                    SO_TY: Pre_Order_typeSO,
                     Name_Product: item.Name_Product,
                     Category_Product: item.Product_Category,
                     Width: item.Product_width,
@@ -300,12 +319,6 @@ function page() {
       }
     } catch (error) {
       console.error("Login failed:", error);
-    }
-  };
-
-  const recordNameProject = async () => {
-    if (projectName != "") {
-      setCheckNameProject(true);
     }
   };
 
@@ -401,6 +414,7 @@ function page() {
   // ฟังก์ชันอัปโหลดไฟล์
   const importfile = async () => {
     setLoading(true);
+
     if (files.length === 0) {
       alert("กรุณาเลือกไฟล์ก่อนอัปโหลด");
       return;
@@ -422,7 +436,7 @@ function page() {
 
     const data = await res.json();
 
-    if (data.message === true) {
+    if (data.message === "true") {
       alert("เพิ่มไฟล์เรียบร้อยแล้ว");
       setFiles([]); // รีเซ็ตไฟล์หลังอัปโหลดเสร็จ
       setInsertMultifile([Date.now()]); // รีเซ็ต input ใหม่
@@ -462,28 +476,10 @@ function page() {
     setDetailOrder(response);
   };
 
-  const deleteprojectname = (number) => {
-    if (number === 1) {
-      setProjectName("");
-      setCheckNameProject(false);
-    } else {
-      setProjectClass("");
-      setCheckNameProject(false);
-    }
-  };
-
-  const groupedProducts = product_basket.reduce((acc, product) => {
-    if (!acc[product.Product_class]) {
-      acc[product.Product_class] = [];
-    }
-    acc[product.Product_class].push(product);
-    return acc;
-  }, {});
-
   const groupByCategory = (data) => {
     // เรียง Name_Class จาก "ชั้น 1" -> "ชั้น 2"
     const sortedData = [...data].sort((a, b) =>
-      a.Name_Class.localeCompare(b.Name_Class, "th")
+      a?.Name_Class?.localeCompare(b.Name_Class, "th")
     );
 
     // จัดกลุ่มตาม Name_Class
@@ -500,137 +496,109 @@ function page() {
   };
 
   const Report = (Name_Project) => {
-    console.log(Name_Project);
+    const newTab = window.open(
+      `../Components/Report?Name_Project=${Name_Project}`,
+      "_blank"
+    );
+
+    if (newTab) {
+      newTab.onload = () => {
+        setTimeout(() => {
+          newTab.print(); // สั่งพิมพ์หน้าทันทีที่หน้าโหลดเสร็จ
+        }, 500);
+      };
+      newTab.onafterprint = () => newTab.close(); // ปิดหน้าหลังจากพิมพ์เสร็จ
+    }
   };
 
-  const TextHeader = () => (
-    console.log('test')
-    
-  )
+  const editheader = async (valueheader) => {
+    setCheckEditHeader(1);
+    setValueEditHeader(valueheader);
+    setRecordValueEdit(valueheader);
+  };
+
+  const submit_edittextheader = async () => {
+    const ValueEdit = await fetch(`http://10.15.0.23:5006/api/post/Edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        valueheader: valueEditHeader,
+        valueEditHeader: recordValueEdit,
+        username: username,
+      }),
+    });
+
+    if (ValueEdit.ok) {
+      const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+        method: "POST",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify({
+          username,
+        }),
+      });
+
+      const response = await res.json();
+
+      setProduct_Basket(response);
+      setCheckEditHeader(0);
+    }
+  };
+
+  const groupedProducts = product_basket.reduce((acc, item) => {
+    if (!acc[item.Product_class]) {
+      acc[item.Product_class] = [];
+    }
+    acc[item.Product_class].push(item);
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    if (product_basket.length > 0 && product_basket[0]?.Product_Projectname) {
+      setNameProject(product_basket[0].Product_Projectname);
+    }
+  }, [product_basket]);
+
+  const editProject = (Project_name) => {
+    setOpenInputProject(1);
+    setValueDefaultProject(Project_name);
+    setNewTextProject(Project_name);
+  };
+
+  const ChangeRecordProject = async () => {
+    const res = await fetch(
+      `http://10.15.0.23:5006/api/post/EditTextHeader`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          valueDefaultProject: valueDefaultProject,
+          newTextProject: newTextProject,
+          username: username,
+        }),
+      }
+    );
+
+    if (res.ok) {
+      const res = await fetch("http://10.15.0.23:5006/api/post/checkbasket", {
+        method: "POST",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify({
+          username,
+        }),
+      });
+
+      const response = await res.json();
+
+      setProduct_Basket(response);
+      setOpenInputProject(0);
+    }
+  };
 
   return (
     <div className="bg-dashbaord">
       {loading && (
         <div className="form-loading">
           <span className="loader"></span>
-        </div>
-      )}
-      {modal === 1 && (
-        <div className="modal-data">
-          <div className="modal-data-content">
-            <h5 className="text-center mb-3">{standard}</h5>
-            <div className="mb-2">
-              <select
-                className="form-select"
-                onChange={(e) => setGetProduct(e.target.value)}
-                required
-              >
-                <option selected disabled>
-                  เลือก Standard
-                </option>
-                {dataStandard.map((item, index) => (
-                  <option key={index}>
-                    {item.Standard} : {item.Name_Model}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mb-2">
-              <select
-                className="form-select"
-                onChange={(e) => setGetCategory(e.target.value)}
-                defaultValue={""}
-                required
-              >
-                <option value="" selected disabled>
-                  {category_Bloom[0]?.Category_bloom === null ? (
-                    <labal>-</labal>
-                  ) : (
-                    <label>ประเภทบาน</label>
-                  )}
-                </option>
-                {category_Bloom[0]?.Category_bloom === null
-                  ? ""
-                  : category_Bloom.map((item, index) => (
-                      <option key={index}>{item.Category_bloom}</option>
-                    ))}
-              </select>
-            </div>
-            <div className="mb-2 row">
-              <label>กำหนดขนาด</label>
-              <div className="col-5">
-                <input
-                  className="form-control col-5"
-                  placeholder="กว้าง"
-                  onChange={(e) => setGetWidth(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="col-2 text-center">
-                <label> X </label>
-              </div>
-              <div className="col-5">
-                <input
-                  className="form-control col-5"
-                  placeholder="ยาว"
-                  onChange={(e) => setGetLong(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-2">
-              <textarea
-                className="form-control"
-                placeholder="รายละเอียดเพิ่มเติม"
-                onChange={(e) => setTextArea(e.target.value)}
-              ></textarea>
-            </div>
-            <div className="mb-2">
-              <input
-                type="text"
-                className="form-control"
-                onChange={(e) => setGetPcs(e.target.value)}
-                placeholder="จำนวน"
-                required
-              />
-            </div>
-            <div className="mb-2">
-              <input
-                type="text"
-                className="form-control"
-                onChange={(e) => setGetPrice(e.target.value)}
-                placeholder="ราคา/หน่วย"
-                required
-              />
-            </div>
-            <div className="mb-2">
-              <input
-                type="date"
-                className="form-control"
-                onChange={(e) => setRequest_Date(e.target.value)}
-                required
-              />
-            </div>
-            <div className="mt-3 row">
-              <div className="col-5">
-                <button
-                  className="form-control btn btn-warning"
-                  onClick={handleCancel}
-                >
-                  ยกเลิก
-                </button>
-              </div>
-              <div className="col-2"></div>
-              <div className="col-5 d-flex justify-content-end">
-                <button
-                  className="form-control btn btn-success"
-                  onClick={() => handleProductSubmit()}
-                >
-                  เพิ่ม
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
       {modelFile == 1 && (
@@ -751,16 +719,7 @@ function page() {
             }`}
           >
             <h5 className={`p-3 menu-header`} onClick={page_product}>
-              สั่งสินค้า
-            </h5>
-          </div>
-          <div
-            className={`col border-btn ${
-              header_select == 2 ? "header-select" : ""
-            }`}
-          >
-            <h5 className={`p-3 menu-header`} onClick={page_basket}>
-              {product_basket.length} รายการ
+              ขอยื่นราคา
             </h5>
           </div>
           <div
@@ -781,11 +740,8 @@ function page() {
       </div>
       <div>
         {swith_page === 0 && (
-          <div
-            className={`mt-3 opacity 
-            `}
-          >
-            <div className="row d-flex justify-content-between mx-5 m-4">
+          <div className={`opacity`}>
+            <div className="row d-flex justify-content-between mx-5 m-3">
               <div className="col-4">
                 <div className="card-modal-1">
                   <div className="number-modal">
@@ -845,7 +801,7 @@ function page() {
                       <thead className="table-header">
                         <tr>
                           <th>โครงการ</th>
-                          <th>Status</th>
+                          <th>Doc_TY</th>
                           <th>มูลค่า</th>
                           <th>วันที่จัดส่ง</th>
                           <th width="5%">รายละเอียด</th>
@@ -863,7 +819,7 @@ function page() {
                           .map((element, index) => (
                             <tr key={index}>
                               <td>{element.Name_Project}</td>
-                              <td></td>
+                              <td>{element.SO_TY}</td>
                               <td>{element.Product_price.toLocaleString()}</td>
                               <td>
                                 {(() => {
@@ -880,7 +836,7 @@ function page() {
                                 <button
                                   className="btn btn-warning"
                                   onClick={() =>
-                                    OrderDetail(element.OrderNumber)
+                                    OrderDetail(element.ERP_Order_Number)
                                   }
                                 >
                                   <Image
@@ -915,7 +871,7 @@ function page() {
                   <thead className="basket-table-header">
                     <tr>
                       <th>ว/ด/ป</th>
-                      <th>Status</th>
+                      <th>Doc_TY</th>
                       <th width="60%">โครงการ</th>
                       <th>กำหนดโอน</th>
                       <th>กำหนดส่ง</th>
@@ -943,8 +899,10 @@ function page() {
                                 .padStart(2, "0")}-${date.getFullYear()}`;
                             })()}
                           </td>
-                          <td></td>
-                          <td>{element.Name_Project}</td>
+                          <td>{element.SO_TY}</td>
+                          <td>
+                            {element.ERP_Order_Number} - {element.Name_Project}
+                          </td>
                           <td></td>
                           <td>
                             {(() => {
@@ -962,7 +920,9 @@ function page() {
                           <td align="center">
                             <button
                               className="btn btn-warning"
-                              onClick={() => OrderDetail(element.OrderNumber)}
+                              onClick={() =>
+                                OrderDetail(element.ERP_Order_Number)
+                              }
                             >
                               <Image
                                 src="/icon/search.png"
@@ -980,135 +940,302 @@ function page() {
             </div>
           </div>
         )}
-        {swith_page === 1 &&
-          (checknameProject === true ? (
-            <div className="container">
-              <div className="row mt-3">
-                <div className="col-12 text-center">
-                  <label className="h3">โครงการ {projectName}</label>
-                  <label
-                    className="h3  mx-3 text-cancel"
-                    onClick={() => deleteprojectname(1)}
-                  >
-                    &times;
-                  </label>
-                </div>
-              </div>
-              <div
-                className={`form-product opacity
-                `}
-              >
-                <div className="row mx-5 mt-5 d-flex justify-content-between">
-                  {uniqueData.map((item, index) => (
-                    <div className="col-2 mb-3" key={index}>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() =>
-                          handlemodal(item.Name_Product, item.Number_FG)
-                        }
-                      >
-                        {item.Name_Product}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="modelproject">
-              <div className="modelproject-content">
-                <div className="p-3">
-                  <div className="row">
-                    {/* Input สำหรับชื่อโครงการ */}
-                    <div className="col-1 text-danger h3">*</div>
-                    <div className="col-11">
+        {swith_page === 1 && (
+          <>
+            <div className="row mt-3 mx-3 p-3 opacity">
+              <div className={`col-2 line-border-input`}>
+                <div className="row p-1">
+                  {product_basket.length > 0 ? (
+                    <div className="col-12 mb-2">
                       <input
                         className="form-control"
-                        placeholder="ชื่อโครงการ"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
+                        value={product_basket[0].Product_Projectname}
+                        placeholder={product_basket[0].Product_Projectname}
+                        disabled
+                      />
+                    </div>
+                  ) : (
+                    <div className="col-12 mb-2">
+                      <input
+                        className="form-control"
+                        onChange={(e) => setNameProject(e.target.value)}
+                        value={nameProject}
+                        placeholder="โครงการ"
                         required
                       />
                     </div>
-                    {/* ปุ่มบันทึก */}
-                    <div className="d-flex justify-content-center mt-3">
-                      <button
-                        className="btn btn-success mx-3"
-                        onClick={() => recordNameProject()}
-                      >
-                        บันทึก
-                      </button>
+                  )}
+                  <div className="col-12 mb-2">
+                    <input
+                      className="form-control"
+                      onChange={(e) => setProjectClass(e.target.value)}
+                      value={projectClass}
+                      placeholder="Text Ly_TY"
+                      required
+                    />
+                  </div>
+                  <div className="col-12 mb-2">
+                    <select
+                      className="form-select"
+                      onChange={(e) => {
+                        const [Name_Product, Number_FG] =
+                          e.target.value.split(" ");
+                        handlemodal(Name_Product, Number_FG);
+                      }}
+                      required
+                    >
+                      <option value="" selected disabled>
+                        เลือกประเภท
+                      </option>
+                      {uniqueData.map((item, index) => (
+                        <option
+                          key={index}
+                          value={`${item.Name_Product} ${item.Number_FG}`}
+                        >
+                          {item.Name_Product}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 mb-2">
+                    <select
+                      className="form-select"
+                      onChange={(e) => setGetProduct(e.target.value)}
+                      required
+                    >
+                      <option selected disabled>
+                        เลือก Standard
+                      </option>
+                      {dataStandard.map((item, index) => (
+                        <option key={index}>
+                          {item.Standard} : {item.Name_Model}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 mb-2">
+                    <select
+                      className="form-select"
+                      onChange={(e) => setGetCategory(e.target.value)}
+                      defaultValue={""}
+                      required
+                    >
+                      <option value="" selected disabled>
+                        {category_Bloom[0]?.Category_bloom === null ? (
+                          <labal>-</labal>
+                        ) : (
+                          <label>ประเภทบาน</label>
+                        )}
+                      </option>
+                      {category_Bloom[0]?.Category_bloom === null
+                        ? ""
+                        : category_Bloom.map((item, index) => (
+                            <option key={index}>{item.Category_bloom}</option>
+                          ))}
+                    </select>
+                  </div>
+                  <div className="col-12 mb-2">
+                    <div className="row">
+                      <div className="col-6">
+                        <input
+                          className="form-control col-5"
+                          placeholder="กว้าง"
+                          onChange={(e) => setGetWidth(e.target.value)}
+                          value={getWidth}
+                          required
+                        />
+                      </div>
+                      <div className="col-6">
+                        <input
+                          className="form-control col-5"
+                          placeholder="ยาว"
+                          onChange={(e) => setGetLong(e.target.value)}
+                          value={getLong}
+                          required
+                        />
+                      </div>
                     </div>
+                  </div>
+                  <div className="col-12 mb-2">
+                    <input
+                      type="text"
+                      className="form-control"
+                      onChange={(e) => setGetPcs(e.target.value)}
+                      placeholder="จำนวน"
+                      value={getPcs}
+                      required
+                    />
+                  </div>
+                  <div className="col-12 mb-2">
+                    <input
+                      type="text"
+                      className="form-control"
+                      onChange={(e) => setGetPrice(e.target.value)}
+                      placeholder="ราคา/หน่วย"
+                      value={getPrice}
+                      required
+                    />
+                  </div>
+                  <div className="col-12 mb-2">
+                    <input
+                      type="date"
+                      className="form-control"
+                      onChange={(e) => setRequest_Date(e.target.value)}
+                      value={request_Date}
+                      required
+                    />
+                  </div>
+                  <div className="col-12 mb-2">
+                    <textarea
+                      className="form-control"
+                      placeholder="รายละเอียดเพิ่มเติม"
+                      onChange={(e) => setTextArea(e.target.value)}
+                      value={textArea}
+                    ></textarea>
+                  </div>
+                  <div className="col-12">
+                    <button
+                      className="form-control btn btn-success"
+                      onClick={() => handleProductSubmit()}
+                    >
+                      เพิ่ม
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        {swith_page === 2 && (
-          <>
-            <div className={`p-5 mx-5 form-product opacity`}>
-              {product_basket.length > 0 && (
-                <>
-                  <div className="d-flex justify-content-between mb-2">
-                    <label className="h4">
-                      โครงการ {product_basket[0]?.Product_Projectname}
-                    </label>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => TextHeader()}
-                    >
-                      เพิ่ม textheader
-                    </button>
-                  </div>
-                  <div className="basket-table-responsive">
-                    <table className="table table-bordered">
-                      <thead className="basket-table-header">
-                        <tr>
-                          <th>FG</th>
-                          <th>สินค้า</th>
-                          <th>ประเภท</th>
-                          <th>กว้าง X ยาว</th>
-                          <th>จำนวน/ชิ้น</th>
-                          <th>ราคา</th>
-                          <th>วันที่จัดส่ง</th>
-                          <th>รายละเอียดเพิ่มเติม</th>
-                        </tr>
-                      </thead>
-                      {Object.entries(groupedProducts).map(
-                        ([productClass, products]) => (
-                          <tbody key={productClass}>
+              <div className="col-10">
+                <div className="list-product">
+                  <table className="table table-bordered border-radius">
+                    {product_basket.length > 0 &&
+                      product_basket[0].Product_Projectname && (
+                        <thead className="bg-white h5">
+                          <tr>
+                            <td colSpan={9}>
+                              {openInputProject == 1 ? (
+                                <div className="row">
+                                  <div className="col-4"></div>
+                                  <div className="col-3">
+                                    <input
+                                      className="form-control"
+                                      value={newTextProject}
+                                      onChange={(e) =>
+                                        setNewTextProject(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  <div className="col-5">
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={() => ChangeRecordProject()}
+                                    >
+                                      ตกลง
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center">
+                                  โครงการ{" "}
+                                  {product_basket[0].Product_Projectname}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <Image
+                                src={`/icon/edit.png`}
+                                width={25}
+                                height={25}
+                                alt="edit"
+                                style={{ cursor: "pointer" }}
+                                onClick={() =>
+                                  editProject(
+                                    product_basket[0].Product_Projectname
+                                  )
+                                }
+                              />
+                            </td>
+                          </tr>
+                        </thead>
+                      )}
+
+                    {Object.entries(groupedProducts).map(
+                      ([className, items], index) => (
+                        <React.Fragment key={index}>
+                          <thead className="bg-white">
                             <tr>
-                              <td
-                                colSpan={8}
-                                className="fw-bold bg-light text-center"
-                              >
-                                {productClass}
+                              <td colSpan={9}>
+                                {checkEditHeader == 1 &&
+                                className == valueEditHeader ? (
+                                  <div className="row">
+                                    <div className="col-4"></div>
+                                    <div className="col-3">
+                                      <input
+                                        className="form-control"
+                                        value={recordValueEdit}
+                                        onChange={(e) =>
+                                          setRecordValueEdit(e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="col-5">
+                                      <button
+                                        className="btn btn-primary"
+                                        onClick={() => submit_edittextheader()}
+                                      >
+                                        ตกลง
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-center">{className}</div>
+                                )}
+                              </td>
+                              <td className="bg-light">
+                                <Image
+                                  src={`/icon/edit.png`}
+                                  width={25}
+                                  height={25}
+                                  alt="edit"
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() => editheader(className)}
+                                />
                               </td>
                             </tr>
-                            {products.map((element, index) => (
-                              <tr key={index}>
-                                <td>{element.Product_FG}</td>
-                                <td>{element.Name_Product}</td>
-                                <td>{element.Product_Category}</td>
+                          </thead>
+                          <thead className="bg-white">
+                            <tr>
+                              <th>FG</th>
+                              <th>ประเภท</th>
+                              <th>สินค้า</th>
+                              <th>บาน</th>
+                              <th>กว้าง X ยาว</th>
+                              <th>จำนวน/ชิ้น</th>
+                              <th>ราคา</th>
+                              <th>วันที่จัดส่ง</th>
+                              <th>รายละเอียดเพิ่มเติม</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white">
+                            {items.map((item, i) => (
+                              <tr key={i}>
+                                <td>{item.Product_FG}</td>
+                                <td>{item.Name_Product}</td>
+                                <td>{item.Product_STD}</td>
+                                <td>{item.Product_Category}</td>
                                 <td>
-                                  {element.Product_width} X{" "}
-                                  {element.Product_long}
+                                  {item.Product_width} x {item.Product_long}
                                 </td>
-                                <td>{element.Product_pcs.toLocaleString()}</td>
+                                <td>{item.Product_pcs}</td>
+                                <td>{item.Product_price}</td>
                                 <td>
-                                  {(
-                                    element.Product_price * element.Product_pcs
-                                  ).toLocaleString()}
+                                  {item.Product_requestDate.split("T")[0]}
                                 </td>
-                                <td>
-                                  {element.Product_requestDate.split("T")[0]}
-                                </td>
-                                <td>{element.Product_description}</td>
+                                <td>{item.Product_description}</td>
                                 <td width={40} align="center">
                                   <i
                                     className="fa fa-trash icon-delete"
                                     onClick={() =>
-                                      deletebasket(element.Product_ID)
+                                      deletebasket(item.Product_ID)
                                     }
                                     style={{ cursor: "pointer" }}
                                   ></i>
@@ -1116,33 +1243,24 @@ function page() {
                               </tr>
                             ))}
                           </tbody>
-                        )
-                      )}
-                    </table>
-                  </div>
-                  <div className="d-flex justify-content-end mt-2">
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handlesubmit()}
-                    >
-                      บันทึก
-                    </button>
-                  </div>
-                </>
-              )}
-              {product_basket.length == 0 && (
-                <div className="mt-5 text-center">
-                  <h3>ยังไม่มีรายการสินค้า</h3>
-                  <button className="btn btn-danger" onClick={page_product}>
-                    เพิ่มสินค้า
+                        </React.Fragment>
+                      )
+                    )}
+                  </table>
+                </div>
+                <div className="d-flex justify-content-end mt-2">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handlesubmit()}
+                  >
+                    บันทึก
                   </button>
                 </div>
-              )}
+              </div>
             </div>
-            ;
           </>
         )}
-        {swith_page === 3 && (
+        {swith_page === 2 && (
           <>
             <div className="p-5 mx-5 form-product opacity">
               {importFile.length > 0 ? (
@@ -1162,10 +1280,12 @@ function page() {
                     <tbody className="text-center">
                       {importFile.map((item, index) => (
                         <tr key={index}>
-                          <td>{item.NumberOrder}</td>
+                          <td>
+                            {item.SO_TY} - {item.NumberOrder}
+                          </td>
                           <td>{item.Name_Project}</td>
-                          <td>{item.PCS}</td>
-                          <td>{item.Price * item.PCS}</td>
+                          <td>{item.PCS.toLocaleString()}</td>
+                          <td>{item.Price.toLocaleString()}</td>
                           <td>{item.LatestDate.split("T")[0]}</td>
                           <td width={50}>
                             <button
@@ -1181,19 +1301,35 @@ function page() {
                             </button>
                           </td>
                           <td>
-                            <button
-                              className="btn btn-success"
-                              onClick={() =>
-                                insertFile(
-                                  item.Product_ProjectName,
-                                  item.Product_Other,
-                                  item.NumberOrder
-                                )
-                              }
-                            >
-                              ImportFile
-                            </button>
+                            {item.PDF_File == "" ? (
+                              <button
+                                className="btn btn-success"
+                                onClick={() =>
+                                  insertFile(
+                                    item.Product_ProjectName,
+                                    item.Product_Other,
+                                    item.NumberOrder
+                                  )
+                                }
+                              >
+                                ImportFile
+                              </button>
+                            ) : (
+                              <button
+                                className="btn btn-primary"
+                                onClick={() =>
+                                  insertFile(
+                                    item.Product_ProjectName,
+                                    item.Product_Other,
+                                    item.NumberOrder
+                                  )
+                                }
+                              >
+                                อัพไฟล์เพิ่มเติม
+                              </button>
+                            )}
                           </td>
+                          <td>{item.PDF_File}</td>
                         </tr>
                       ))}
                     </tbody>

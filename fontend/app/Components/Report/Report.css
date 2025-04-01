@@ -1,0 +1,30 @@
+.Border-Report{
+    border: 1px solid black;
+    width: 19cm;
+    height: 27.5cm;
+}
+
+.header-images{
+    width: 100%;
+    height: auto;
+}
+
+.border-1{
+    border: 2px solid black;
+}
+
+.border-1 tr td{
+    border: 1px solid black;
+}
+
+.border-1 tr th{
+    border: 1px solid black;
+}
+
+.bg-finish{
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.font-18{
+    font-size: 18px;
+}
