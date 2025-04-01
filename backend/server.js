@@ -291,7 +291,6 @@ ORDER BY Product_class ASC;`
           Ln_Ty: "S",
           Branch__Plant: "P01",
           Requested_Date: Product_requestDate,
-          
         });
       }
     );
@@ -340,11 +339,10 @@ ORDER BY Product_class ASC;`
       }
     );
 
-    const apiResult = await apiResponse.json();    
+    const apiResult = await apiResponse.json();
 
-      // ส่ง response กลับไปยังผู้ใช้งาน
-      res.status(200).json({ insertSN, insertSO });
-    }
+    // ส่ง response กลับไปยังผู้ใช้งาน
+    res.status(200).json({ insertSN, insertSO });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด", error: error.message });
@@ -378,16 +376,18 @@ app.post("/api/post/Master", async (req, res) => {
     const datetoday = new Date();
     const formattedDate = datetoday.toISOString().split("T")[0];
 
-    const daterequest = request_date.split('T')[0]
-    
+    const daterequest = request_date.split("T")[0];
+
     const result = await pool
       .request()
       .input("Order_date", sql.VarChar, formattedDate)
       .input("FG_Product", sql.VarChar, FG_Product)
       .input("Name_Project", sql.VarChar, Name_Project)
       .input("Name_Class", sql.VarChar, Name_Class)
-      .input("SO", sql.VarChar, "")
-      .input("SN", sql.VarChar, "")
+      .input("SN", sql.VarChar, SN)
+      .input("SN_TY", sql.VarChar, SN_TY)
+      .input("SO", sql.VarChar, SO)
+      .input("SO_TY", sql.VarChar, SO_TY)
       .input("Name_Product", sql.VarChar, Name_Product)
       .input("Category_Product", sql.VarChar, Category_Product)
       .input("Width", sql.Int, Width)
