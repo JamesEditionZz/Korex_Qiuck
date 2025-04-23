@@ -141,7 +141,7 @@ app.post("/api/post/basket", async (req, res) => {
     const pool = await sql.connect(config);
 
     const {
-      projectName,
+      nameProject,
       projectClass,
       standard,
       number_FG,
@@ -171,9 +171,7 @@ app.post("/api/post/basket", async (req, res) => {
       .input("member", sql.VarChar, username.username)
       .input("number_FG", sql.VarChar, number_FG)
       .input("Product_description", sql.VarChar, textArea)
-      .input("projectName", sql.VarChar, projectName)
-      .input("projectClass", sql.VarChar, projectClass)
-      .execute("db_Insert_basket");
+      .execute(`db_Insert_basket`);
 
     res.status(200).json(result.recordset);
   } catch (error) {
@@ -283,17 +281,42 @@ ORDER BY Product_class ASC;`
           previousClass = Product_class; // อัปเดตค่า Product_class ปัจจุบัน
         }
 
-        // เพิ่มสินค้าในกลุ่ม
-        response.push({
-          ...item,
-          Description_1: `${Name_Product} ${width}X${long} ${Product_description}`,
-          Description_2: `${Name_Product} ${width}X${long} ${Product_description}`,
-          Ln_Ty: "S",
-          Branch__Plant: "P01",
-          Requested_Date: Product_requestDate,
-        });
+        // ถ้า Item_Number คือ 'N05' ให้เก็บค่าไว้ก่อน
+        if (item.Item_Number === "N05") {
+          hasN05 = true;
+          tempN05Item = { ...item, Description_1: Name_Product, Ln_Ty: "N" };
+        } else {
+          // เพิ่มสินค้าในกลุ่ม
+          responseSN.push({
+            ...item,
+            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
+            Description_2: `${Product_description}`,
+            Ln_Ty: "N",
+            Branch__Plant: "P01",
+            //Requested_Date: "21/04/25",
+          });
+
+          responseSO.push({
+            ...item,
+            Description_1: `${Name_Product} ${width}X${long}`.substring(0, 30),
+            Description_2: `${Product_description}`,
+            Ln_Ty: "W",
+            Branch__Plant: "P01",
+            //Requested_Date: "21/04/25",
+          });
+        }
       }
     );
+
+    const Reresult = getresult.recordset;
+
+    const new_Request_Date = new Date(
+      Reresult[0].Product_requestDate
+    ).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
 
     // ถ้ามี 'N05' ให้เพิ่มท้ายสุด
     if (hasN05 && tempN05Item) {
@@ -301,15 +324,8 @@ ORDER BY Product_class ASC;`
       responseSO.push(tempN05Item);
     }
 
-    const date = new Date();
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = String(date.getFullYear()).slice(-2); // แปลงเป็น พ.ศ. แล้วตัดแค่ 2 หลัก
-
-    let formattedDate = `${day}/${month}/${year}`;
-
-    const apiResponse = await fetch(
-      "http://ptkjdeweb:9083/jderest/v3/orchestrator/CreateSalesOrder_KOR",
+    const OrderSN = await fetch(
+      "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSN",
       {
         method: "POST",
         headers: {
@@ -321,13 +337,16 @@ ORDER BY Product_class ASC;`
           Business_Unit: "11111",
           Sold_To: "107932",
           Ship_To: "107933",
-          Order_Date: { formattedDate },
+          //Order_Date: { formattedDate },
+          Requested_Date: `${new_Request_Date}`,
           Tax_Rate_Code: "OVAT7",
           ProjectNo: "1",
           Customer_PO: getresult.recordset[0]?.Product_ProjectName.substring(
             0,
             25
           ),
+          Delivery_Instructions2:
+            getresult.recordset[0]?.Product_ProjectName.substring(26, 50),
           GridIn_1_3: responseSN,
           GridIn_1_4: [
             {
@@ -339,10 +358,51 @@ ORDER BY Product_class ASC;`
       }
     );
 
-    const apiResult = await apiResponse.json();
+    const insertSN = await OrderSN.json();
 
-    // ส่ง response กลับไปยังผู้ใช้งาน
-    res.status(200).json({ insertSN, insertSO });
+    if (insertSN["Previous Order"]) {
+      const OrderSO = await fetch(
+        "http://192.168.199.104:9083/jderest/v3/orchestrator/CreateSalesOrder_KORSO",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "ITSKOR",
+            password: "itskor",
+            Business_Unit: "11111",
+            Sold_To: "107932",
+            Ship_To: "107932",
+            //Order_Date: { formattedDate },
+            Requested_Date: `${new_Request_Date}`,
+            Delivery_Instructions1: insertSN["Previous Order"],
+            Tax_Rate_Code: "OVAT7",
+            ProjectNo: "107933",
+            Customer_PO: getresult.recordset[0]?.Product_ProjectName.substring(
+              0,
+              25
+            ),
+            Delivery_Instructions2:
+              getresult.recordset[0]?.Product_ProjectName.substring(26, 50),
+            GridIn_1_3: responseSO,
+            GridIn_1_4: [
+              {
+                Sales_Rep_or_Group: "3686",
+              },
+            ],
+            P4210_Version: "",
+          }),
+        }
+      );
+
+      console.log(OrderSO);
+
+      const insertSO = await OrderSO.json();
+
+      // ส่ง response กลับไปยังผู้ใช้งาน
+      res.status(200).json({ insertSN, insertSO });
+    }
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด", error: error.message });
@@ -384,9 +444,9 @@ app.post("/api/post/Master", async (req, res) => {
       .input("FG_Product", sql.VarChar, FG_Product)
       .input("Name_Project", sql.VarChar, Name_Project)
       .input("Name_Class", sql.VarChar, Name_Class)
-      .input("SN", sql.VarChar, SN)
+      .input("SN_Number", sql.Int, SN)
       .input("SN_TY", sql.VarChar, SN_TY)
-      .input("SO", sql.VarChar, SO)
+      .input("SO_Number", sql.Int, SO)
       .input("SO_TY", sql.VarChar, SO_TY)
       .input("Name_Product", sql.VarChar, Name_Product)
       .input("Category_Product", sql.VarChar, Category_Product)
@@ -621,6 +681,168 @@ app.post("/api/post/OrderDetail", async (req, res) => {
   } catch (error) {
     console.error("SQL error:", error);
     res.status(500).send("Error querying the database");
+  }
+});
+
+app.post("/api/post/updateClass", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { draggedItem, item } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Product_ID", sql.Int, draggedItem.Product_ID)
+      .input("item", sql.VarChar, item)
+      .execute("db_update_Class");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/update/NameProject", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { nameProject, username } = req.body;
+
+    const result = await pool
+      .request()
+      .input("nameProject", sql.VarChar, nameProject)
+      .input("username", sql.VarChar, username.username)
+      .execute("db_update_Project");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/Edit", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { valueEditHeader, valueheader, username } = req.body;
+
+    if (valueEditHeader != valueheader) {
+      const result = await pool
+        .request()
+        .input("valueEditHeader", sql.VarChar, valueEditHeader)
+        .input("valueheader", sql.VarChar, valueheader)
+        .input("username", sql.VarChar, username.username)
+        .execute("db_edit_Header");
+      res.status(200).json(result.recordset);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/EditTextHeader", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { valueDefaultProject, newTextProject, username } = req.body;
+
+    if (valueDefaultProject != newTextProject) {
+      const result = await pool
+        .request()
+        .input("valueDefaultProject", sql.VarChar, valueDefaultProject)
+        .input("newTextProject", sql.VarChar, newTextProject)
+        .input("username", sql.VarChar, username.username)
+        .execute("db_edit_Header_Project");
+      res.status(200).json(result.recordset);
+    } else {
+      res.status(200).json();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/Report", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { Name_Project } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Name_Project", sql.VarChar, Name_Project)
+      .execute("db_Report");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/get_Data_edit_Product", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { Product_ID } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Product_ID", sql.Int, Product_ID)
+      .execute("db_Get_Edit_Product_Basket");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/edit_Product_basket", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const {
+      Product_ID,
+      editProduct_width,
+      editProduct_long,
+      editProduct_pcs,
+      editProduct_price,
+      editProduct_description,
+      editProduct_requestDate,
+    } = req.body;
+
+    const result = await pool
+      .request()
+      .input("Product_ID", sql.Int, Product_ID)
+      .input("editProduct_width", sql.Int, editProduct_width)
+      .input("editProduct_long", sql.Int, editProduct_long)
+      .input("editProduct_pcs", sql.Int, editProduct_pcs)
+      .input("editProduct_price", sql.Int, editProduct_price)
+      .input("editProduct_description", sql.VarChar, editProduct_description)
+      .input("editProduct_requestDate", sql.VarChar, editProduct_requestDate)
+      .execute("db_Update_Product_Basket");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/api/post/Master_Data_Edit", async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+
+    const { value } = req.body;
+
+    console.log(value);
+    
+    const result = await pool
+      .request()
+      .input("So_Number", sql.Int, value)
+      .execute("db_Response_Get_Master");
+
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
   }
 });
 

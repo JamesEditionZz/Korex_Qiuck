@@ -197,16 +197,22 @@ table {
 
 .icon-delete {
   color: red;
-  /* Icon color */
   cursor: pointer;
-  /* Pointer cursor on hover */
   transition: color 0.3s;
-  /* Smooth transition */
 }
 
 .icon-delete:hover {
   color: darkred;
-  /* Darker color on hover */
+}
+
+.icon-edit {
+  color: rgb(170, 170, 0);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.icon-edit:hover {
+  color: darkgoldenrod;
 }
 
 .table-box-shadow {
@@ -305,12 +311,11 @@ table {
   height: 100%;
   display: flex;
   position: fixed;
-  z-index: 500;
   padding: 10%;
+  z-index: 5;
 }
 
 .modeldetail-content {
-  display: flex;
   position: fixed;
   top: 100px;
   width: 80%;
@@ -318,7 +323,6 @@ table {
   padding: 10px;
   background-color: white;
   border-radius: 7px;
-  z-index: 1000;
 }
 
 .radius-border {
@@ -361,4 +365,71 @@ table {
   background-color: gray;
   overflow-y: auto;
   height: 80vh;
+}
+
+.modeledit{
+  display: flex;
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.3);
+  width: 100%;
+  height: 100vh;
+}
+
+.modeledit-content{
+  background-color: white;
+  width: 300px;
+  height: 600px;
+  border-radius: 7px;
+  margin-left: auto;
+  margin-right: auto;
+  align-self: center;
+}
+
+.bg-gray{
+  background-color: gray;
+}
+
+.form-inputsize{
+  border-radius: 7px;
+  border: 1px solid gray;
+  width: 80px;
+  padding: 5px;
+}
+
+.form-inputsize:focus{
+  outline: none;
+  border: 1px solid #00a000;
+  background-clip: padding-box;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  box-shadow: 0 0 0 .25rem rgba(9, 255, 0, 0.5)
+}
+
+.form-inputsize-date{
+  border-radius: 7px;
+  border: 1px solid gray;
+  width: 150px;
+  padding: 5px;
+}
+
+.form-inputsize-date:focus{
+  outline: none;
+  border: 1px solid #00a000;
+  background-clip: padding-box;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  box-shadow: 0 0 0 .25rem rgba(9, 255, 0, 0.5)
+}
+
+.form-inputsize-textarea{
+  border-radius: 7px;
+  border: 1px solid gray;
+  width: 100%;
+  padding: 5px;
+}
+
+.form-inputsize-textarea:focus{
+  outline: none;
+  border: 1px solid #00a500;
+  background-clip: padding-box;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  box-shadow: 0 0 0 .25rem rgba(9, 255, 0, 0.5)
 }

@@ -97,10 +97,10 @@ export default function Home() {
                 type="password"
                 className="form-control"
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyUp={keyenter}
+                onKeyUp={(e) => keyenter(e.target.value)}
               />
               <div className="mt-3 d-flex justify-content-center">
-                <button className="btn btn-danger" onClick={handleLogin}>
+                <button className="btn btn-danger" onClick={() => handleLogin()}>
                   Login
                 </button>
               </div>

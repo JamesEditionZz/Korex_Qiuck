@@ -1,30 +1,101 @@
-.Border-Report{
+@media print {
+    @page {
+        size: A4;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .size-paper{
+        margin-left: 1.4cm !important;
+        margin-right: 0.9cm !important;
+        margin-top: 0.45cm;
+    }
+
+    .bg-header {
+        background-color: rgb(160, 160, 160) !important;
+        -webkit-print-color-adjust: exact !important;
+        /* ✅ บังคับพิมพ์สี */
+        print-color-adjust: exact !important;
+        /* ✅ ใช้ได้ในบางเบราว์เซอร์ */
+    }
+}
+
+
+.Border-Report {
     border: 1px solid black;
     width: 19cm;
     height: 27.5cm;
 }
 
-.header-images{
+.header-images {
     width: 100%;
     height: auto;
 }
 
-.border-1{
+.border-1 {
     border: 2px solid black;
 }
 
-.border-1 tr td{
+.border-1 tr td {
     border: 1px solid black;
 }
 
-.border-1 tr th{
+.border-1 tr th {
     border: 1px solid black;
 }
 
-.bg-finish{
+.bg-finish {
     background-color: rgba(0, 0, 0, 0.3);
 }
 
-.font-18{
+.font-18 {
     font-size: 18px;
+}
+
+.font-11 {
+    font-size: 9px;
+}
+
+.font-9 {
+    font-size: 8px;
+}
+
+.text-decoration {
+    text-decoration: underline;
+}
+
+.images-logo-practika {
+    margin-right: 20px;
+    width: 30%;
+    height: auto;
+}
+
+.table-bordered {
+    border: 1px solid black !important;
+}
+
+.bg-header {
+    background-color: rgb(160, 160, 160) !important;
+}
+
+.border-detail {
+    margin-top: -1px !important;
+    margin-left: 0px !important;
+    margin-right: 0px !important;
+    border: 1px solid black;
+}
+
+.border-approved {
+    margin-top: -1px !important;
+    margin-left: 0px !important;
+    margin-right: 0px !important;
+    border: 1px solid black;
+}
+
+.img-footer {
+    width: 100%;
+    height: auto;
 }
